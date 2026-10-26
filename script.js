@@ -68,7 +68,7 @@ async function organize(){
     const response=await fetch('/api/chat',{
       method:'POST',
       headers:{'Content-Type':'application/json'},
-      body:JSON.stringify({message:value,section:section.textContent,memory:memoryBox?.value||''})
+      body:JSON.stringify({message:value,section:section.textContent,taskType:taskType?.value||'auto',memory:memoryBox?.value||''})
     });
     const data=await response.json();
     if(response.ok&&data.reply){
