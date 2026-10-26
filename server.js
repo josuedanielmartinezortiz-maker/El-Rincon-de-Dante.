@@ -20,7 +20,7 @@ app.get("/api/status", (_req, res) => {
 });
 
 app.post("/api/chat", async (req, res) => {
-  const { message, section = "Inicio", memory = "" } = req.body || {};
+  const { message, section = "Inicio", taskType = "auto", memory = "" } = req.body || {};
   if (typeof message !== "string" || !message.trim()) {
     return res.status(400).json({ error: "Escribe una idea para comenzar." });
   }
@@ -49,7 +49,7 @@ app.post("/api/chat", async (req, res) => {
           { role: "system", content: systemPrompt },
           {
             role: "user",
-            content: `Sección actual: ${String(section).slice(0, 80)}\n\nNotas de continuidad del creador:\n${typeof memory === "string" ? memory : ""}\n\nTarea:\n${message}`
+            content: `Sección actual: ${String(section).slice(0, 80)}\nTipo de tarea seleccionado: ${String(taskType).slice(0, 40)}\n\nNotas de continuidad del creador:\n${typeof memory === "string" ? memory : ""}\n\nTarea:\n${message}`
           }
         ],
         temperature: 0.7
