@@ -120,3 +120,33 @@ document.getElementById('importMemory').addEventListener('change',async(event)=>
   }catch(e){memoryStatus.textContent='No se pudo importar. Elige una copia JSON válida de este proyecto.';}
   event.target.value='';
 });
+
+
+// Director de tareas: añade estructura e instrucciones según el objetivo seleccionado.
+const taskType=document.getElementById('taskType');
+const taskHint=document.getElementById('taskHint');
+const taskDescriptions={
+  auto:'El director detectará la tarea según tu instrucción.',
+  story:'Prioriza estructura narrativa, diálogos, ritmo y secretos que deben reservarse.',
+  scene:'Devuelve escenas breves, acciones claras, cámara, sonido y prompts de video.',
+  character:'Crea una ficha de aspecto, ropa, etapa evolutiva, emociones y elementos prohibidos.',
+  continuity:'Compara la idea con las notas del creador y separa contradicciones de dudas.',
+  game:'Organiza mecánicas, controles, bucle de juego, progresión y prototipo para Android.',
+  code:'Ayuda con código por etapas, explica dónde va cada archivo y evita exponer secretos.'
+};
+taskType.addEventListener('change',()=>{taskHint.textContent=taskDescriptions[taskType.value]||taskDescriptions.auto;});
+const previousBuildDraft=buildDraft;
+buildDraft=function(value){
+  const base=previousBuildDraft(value);
+  const mode=taskType.value;
+  if(mode==='auto') return base;
+  const instructions={
+    story:'OBJETIVO DEL DIRECTOR: historia. Propón una estructura con inicio, conflicto, reacción, cierre y diálogos cuando correspondan. Distingue canon confirmado de ideas nuevas.',
+    scene:'OBJETIVO DEL DIRECTOR: escenas y prompts. Separa cada escena con ubicación, acción visible, plano de cámara, audio y prompt corto. Mantén la continuidad visual.',
+    character:'OBJETIVO DEL DIRECTOR: personaje. Organiza nombre, edad según capítulo, aspecto, ropa, etapa evolutiva, personalidad, habilidades confirmadas y cambios prohibidos.',
+    continuity:'OBJETIVO DEL DIRECTOR: continuidad. Enumera hechos confirmados, posibles contradicciones y preguntas pendientes. No cambies el canon por tu cuenta.',
+    game:'OBJETIVO DEL DIRECTOR: videojuego. Propón objetivo del jugador, bucle de juego, controles táctiles, mecánicas, recursos y un prototipo pequeño antes de añadir complejidad.',
+    code:'OBJETIVO DEL DIRECTOR: programación. Entrega pasos numerados, archivos que cambian, código completo cuando sea necesario y una explicación breve. Nunca pongas claves secretas en código del navegador.'
+  };
+  return (instructions[mode]||'')+'\n\n'+base;
+};
