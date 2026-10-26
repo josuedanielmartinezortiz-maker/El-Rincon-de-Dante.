@@ -40,3 +40,7 @@ Abre `index.html` en un navegador o publica el repositorio con un servicio de ho
 
 ### Configuración pendiente
 Este backend usa un formato compatible con Chat Completions. Antes de desplegarlo, elige un proveedor que admita ese formato y revisa sus condiciones, límites, costo y requisitos de edad. Configura `AI_BASE_URL`, `AI_API_KEY` y `AI_MODEL` como variables secretas del servidor. No introduzcas una clave real en los archivos del repositorio. El endpoint no queda operativo con una API real hasta configurar esas variables y desplegarlo en un host que soporte Node.js.
+
+
+## Director inteligente (beta local)
+La interfaz incluye un selector de tarea: automático, historia, escenas, personajes, continuidad, mecánicas de juego o código. El selector orienta los borradores locales y se envía al backend en el campo `section` junto con el texto de la tarea y las notas. Las salidas locales son plantillas, no razonamiento de un modelo real. Cuando se configure un proveedor, conviene enviar también el tipo de tarea explícito y probar cada ruta con ejemplos reales.
