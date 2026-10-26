@@ -78,3 +78,24 @@ document.getElementById('saveMemory').addEventListener('click',()=>{
     memoryStatus.textContent='Memoria guardada en este navegador.';
   }catch(e){memoryStatus.textContent='No se pudo guardar. Revisa la configuración del navegador.';}
 });
+
+document.getElementById('exportMemory').addEventListener('click',()=>{
+  const payload={app:'El Rincón de Dante',version:1,exportedAt:new Date().toISOString(),memory:memoryBox.value,idea:ideaBox.value};
+  const blob=new Blob([JSON.stringify(payload,null,2)],{type:'application/json'});
+  const url=URL.createObjectURL(blob);
+  const a=document.createElement('a');a.href=url;a.download='rincon-de-dante-copia.json';a.click();
+  URL.revokeObjectURL(url);
+  memoryStatus.textContent='Copia exportada. Guárdala en un lugar seguro.';
+});
+document.getElementById('importMemory').addEventListener('change',async(event)=>{
+  const file=event.target.files&&event.target.files[0];if(!file)return;
+  try{
+    const data=JSON.parse(await file.text());
+    if(typeof data.memory!=='string'&&typeof data.idea!=='string') throw new Error('Formato no reconocido');
+    if(typeof data.memory==='string') memoryBox.value=data.memory;
+    if(typeof data.idea==='string') ideaBox.value=data.idea;
+    try{localStorage.setItem(MEMORY_KEY,memoryBox.value);localStorage.setItem(IDEA_KEY,ideaBox.value);}catch(e){}
+    memoryStatus.textContent='Copia importada en este navegador.';
+  }catch(e){memoryStatus.textContent='No se pudo importar. Elige una copia JSON válida de este proyecto.';}
+  event.target.value='';
+});
