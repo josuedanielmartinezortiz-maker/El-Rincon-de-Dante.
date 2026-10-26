@@ -55,12 +55,33 @@ function buildDraft(value){
   return output+'\n\n— Borrador preparado por las herramientas locales de El Rincón de Dante. Aún no es una respuesta generada por una IA conectada.';
 }
 
-function organize(){
+async function organize(){
   const value=ideaBox.value.trim();
   resultBox.hidden=false;
   if(!value){resultBox.textContent='Escribe una idea primero y la organizamos.';return;}
-  resultBox.textContent=buildDraft(value);
   try{localStorage.setItem(IDEA_KEY,value);}catch(e){}
+  const button=document.getElementById('send');
+  button.disabled=true;
+  button.textContent='Preparando…';
+  resultBox.textContent='Preparando tu borrador…';
+  try{
+    const response=await fetch('/api/chat',{
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({message:value,section:section.textContent,memory:memoryBox?.value||''})
+    });
+    const data=await response.json();
+    if(response.ok&&data.reply){
+      resultBox.textContent=data.reply;
+      return;
+    }
+    resultBox.textContent=buildDraft(value)+'\n\nESTADO DE CONEXIÓN\n'+(data.error||'La IA todavía no está configurada.')+'\nPuedes seguir usando los borradores locales mientras preparamos el proveedor.';
+  }catch(e){
+    resultBox.textContent=buildDraft(value)+'\n\nESTADO DE CONEXIÓN\nNo se encontró un servidor de IA activo. El borrador local está disponible; cuando publiquemos el backend podrás conectar un proveedor compatible.';
+  }finally{
+    button.disabled=false;
+    button.textContent='Organizar idea →';
+  }
 }
 document.getElementById('send').addEventListener('click',organize);
 
