@@ -74,7 +74,10 @@ app.post("/api/chat", async (req, res) => {
 });
 
 app.use(express.static(here));
-app.get("*", (_req, res) => res.sendFile(path.join(here, "index.html")));
+app.use((req, res, next) => {
+  if (req.method !== "GET") return next();
+  res.sendFile(path.join(here, "index.html"));
+});
 
 app.listen(port, () => {
   console.log(`El Rincón de Dante disponible en el puerto ${port}`);
