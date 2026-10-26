@@ -29,3 +29,14 @@ Esta versión todavía no llama a un modelo de IA. Los borradores se generan med
 
 ## Uso
 Abre `index.html` en un navegador o publica el repositorio con un servicio de hosting estático compatible. El prototipo local puede funcionar sin una API, aunque algunas fuentes tipográficas dependen de internet.
+
+
+## Backend preparado (versión 0.2)
+- `server.js` crea un endpoint `POST /api/chat` y un endpoint `GET /api/status`.
+- `package.json` define Express y el comando de inicio.
+- `.env.example` muestra los nombres de configuración sin incluir claves reales.
+- `.gitignore` evita subir `.env` y dependencias.
+- La interfaz intenta usar el endpoint y vuelve al borrador local si el backend no está activo o no está configurado.
+
+### Configuración pendiente
+Este backend usa un formato compatible con Chat Completions. Antes de desplegarlo, elige un proveedor que admita ese formato y revisa sus condiciones, límites, costo y requisitos de edad. Configura `AI_BASE_URL`, `AI_API_KEY` y `AI_MODEL` como variables secretas del servidor. No introduzcas una clave real en los archivos del repositorio. El endpoint no queda operativo con una API real hasta configurar esas variables y desplegarlo en un host que soporte Node.js.
