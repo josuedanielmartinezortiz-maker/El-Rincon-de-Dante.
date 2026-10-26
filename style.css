@@ -3,3 +3,5 @@
 .memory{margin-top:16px}.memory #memoryNotes{min-height:110px}.memory .sendrow{margin-top:12px}#memoryStatus{line-height:1.5}
 
 .memorytools{display:flex;flex-wrap:wrap;gap:9px;margin-top:12px}.secondarybtn,.importbtn{display:inline-flex;align-items:center;justify-content:center;padding:10px 13px;border-radius:9px;border:1px solid #3c3855;background:#211e34;color:#d5caff;font-weight:700;font-size:12px;cursor:pointer}.memorytools input{display:none}
+
+.director{margin-top:16px}.taskselect{display:block;width:100%;padding:12px;background:#0f0f1d;border:1px solid #34334b;border-radius:10px;color:var(--text);font:inherit}.taskhint{margin:10px 0 0;color:var(--muted);font-size:12px;line-height:1.5}
