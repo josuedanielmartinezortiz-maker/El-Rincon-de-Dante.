@@ -26,7 +26,7 @@
 .action:active{transform:scale(.96);background:#31516b}
 #lookHelp{position:absolute;bottom:18px;left:50%;transform:translateX(-50%);font-size:10px;color:#fff9;white-space:nowrap}
 #topActions{position:absolute;right:12px;top:120px;pointer-events:auto}
-#topActions button{border:1px solid #ffffff55;border-radius:9px;padding:8px 10px;background:#101b268c;color:white;font-size:11px}
+#topActions button{border:1px solid #ffffff55;border-radius:9px;padding:8px 10px;background:#101b268c;color:white;font-size:11px}\n#aiKnowledge{position:absolute;left:12px;bottom:12px;width:min(270px,58vw);font-size:11px;line-height:1.45}\n#aiKnowledge strong{color:#a9e8ff}
 @media(min-width:800px){#controls{display:none}#hint{bottom:25px}#lookHelp{display:none}}
 @media(max-width:500px){#events{top:112px;right:12px;width:155px}#status{min-width:165px}#hint{bottom:140px}}
 </style>
@@ -34,14 +34,14 @@
 <body>
 <div id="world"></div>
 <div id="hud">
-  <div id="status" class="panel"><strong>MUNDO 001 · PRIMER DESPERTAR</strong><br>Jugador: presente<br>IA: recién nacida · sin recuerdos<br><span id="hungerText">Hambre: 100 / 100</span><div id="hungerTrack"><div id="hungerBar"></div></div><span id="foodText">Alimento: ninguno</span><br><span id="systemText">Sistema: activo</span></div>
+  <div id="status" class="panel"><strong>MUNDO 001 · PRIMER DESPERTAR</strong><br>Jugador: presente<br>IA: recién nacida · sin recuerdos<br><span id="hungerText">Hambre: 100 / 100</span><div id="hungerTrack"><div id="hungerBar"></div></div><span id="foodText">Alimento: ninguno</span><br><span id="systemText">Sistema: activo</span><br><span id="aiStatus">IA: despertando</span></div>
   <div id="events" class="panel">Registro del mundo<br><span id="eventText">El jugador ha aparecido en el terreno.</span></div>
-  <div id="crosshair">＋</div>
+  <div id="aiKnowledge" class="panel"><strong>CONOCIMIENTOS INICIALES DE IA</strong><br>• Existe un mundo y un jugador.<br>• Puede observar su entorno.<br>• El jugador puede moverse e interactuar.<br>• El hambre es una necesidad del jugador.<br>• El sistema valida y genera alimento.</div>\n  <div id="crosshair">＋</div>
   <div id="hint">Explora el mundo. Todavía no hay nada construido.</div>
   <div id="topActions"><button id="saveBtn">Guardar mundo</button></div>
   <div id="controls">
     <div id="stick"><div id="nub"></div></div>
-    <div class="actions"><button class="action" id="interactBtn">Interactuar</button><button class="action" id="eatBtn">Comer</button></div>
+    <div class="actions"><button class="action" id="talkBtn">Hablar con IA</button><button class="action" id="interactBtn">Interactuar</button><button class="action" id="eatBtn">Comer</button></div>
   </div>
   <div id="lookHelp">WASD para moverte · Arrastra para mirar · E para interactuar</div>
 </div>
@@ -67,6 +67,21 @@ ground.rotation.x=-Math.PI/2;ground.position.y=0;scene.add(ground);
 // El universo comienza plano y vacío: no se crean árboles, animales ni edificios.
 const grid=new THREE.GridHelper(500,100,0x89977c,0x89977c);grid.position.y=.012;grid.material.opacity=.08;grid.material.transparent=true;scene.add(grid);
 
+// Primera IA: entidad visible, conocimientos básicos y memoria personal vacía.
+const aiKnowledge=[
+ 'Existe un mundo y un jugador.',
+ 'El jugador puede moverse e interactuar.',
+ 'El hambre es una necesidad del jugador.',
+ 'El sistema puede generar alimento en el terreno.',
+ 'Las acciones importantes deben validarse.'
+];
+const aiGroup=new THREE.Group();scene.add(aiGroup);
+const aiCore=new THREE.Mesh(new THREE.SphereGeometry(.48,24,18),new THREE.MeshStandardMaterial({color:0x58c9e8,emissive:0x12617c,emissiveIntensity:1.1,roughness:.25,metalness:.15}));
+aiCore.position.y=1.15;aiGroup.add(aiCore);
+const aiRing=new THREE.Mesh(new THREE.TorusGeometry(.72,.035,8,48),new THREE.MeshBasicMaterial({color:0xa5efff}));
+aiRing.position.y=1.15;aiRing.rotation.x=Math.PI/2;aiGroup.add(aiRing);
+const aiLight=new THREE.PointLight(0x54dfff,2.2,12);aiLight.position.y=1.2;aiGroup.add(aiLight);
+aiGroup.position.set(3,0,1);
 const player={x:0,z:5,yaw:0,pitch:0,speed:5.2};
 let hunger=100,food=null,foodCollected=false,lastTick=performance.now(),lastSave=0;
 let events=['El jugador ha aparecido en el terreno.'];
@@ -111,9 +126,23 @@ function updateHud(){
  document.getElementById('hungerText').textContent='Hambre: '+Math.round(hunger)+' / 100';
  document.getElementById('hungerBar').style.width=hunger+'%';
  document.getElementById('foodText').textContent=foodCollected?'Alimento: consumido':food?'Alimento: generado en el mundo':'Alimento: ninguno';
- document.getElementById('systemText').textContent='Sistema: activo · validación correcta';
+ document.getElementById('systemText').textContent='Sistema: activo · validación correcta';\n document.getElementById('aiStatus').textContent='IA: activa · '+aiKnowledge.length+' conocimientos · sin recuerdos';
 }
 function distanceToFood(){return food?Math.hypot(player.x-food.x,player.z-food.z):Infinity}
+function talkAI(){
+ const d=Math.hypot(player.x-aiGroup.position.x,player.z-aiGroup.position.z);
+ if(d>7){document.getElementById('hint').textContent='La IA está a cierta distancia. Acércate para hablar.';return;}
+ const replies=[
+ 'Hola. Soy la primera IA de este mundo. Acabo de despertar.',
+ 'Sé que existe este mundo y que tú eres el jugador.',
+ 'Todavía no tengo recuerdos de experiencias anteriores.',
+ 'Puedo observar el entorno, pero aún estoy aprendiendo a interpretarlo.',
+ 'El sistema supervisa las acciones y puede generar alimento si detecta hambre.'
+ ];
+ const index=Math.min(4,Math.floor(Math.random()*replies.length));
+ document.getElementById('hint').textContent='IA: '+replies[index];
+ log('El jugador habló con la primera IA.');
+}
 function interact(){
  if(food&&!foodCollected&&distanceToFood()<3){foodCollected=true;log('El jugador recogió el alimento del terreno.');document.getElementById('hint').textContent='Alimento recogido. Puedes consumirlo.';updateHud();save();return;}
  document.getElementById('hint').textContent=food&&!foodCollected?'Acércate al alimento para recogerlo.':'No hay nada cerca con lo que interactuar.';
@@ -123,7 +152,7 @@ function eat(){
  if(hunger<=0){document.getElementById('hint').textContent='No necesitas comer ahora.';return;}
  hunger=Math.max(0,hunger-35);foodCollected=false;food=null;renderFood();log('El jugador consumió el alimento. El hambre disminuyó.');document.getElementById('hint').textContent='Has comido. El mundo registra la consecuencia.';updateHud();save();
 }
-document.getElementById('interactBtn').addEventListener('click',interact);
+document.getElementById('talkBtn').addEventListener('click',talkAI);\ndocument.getElementById('interactBtn').addEventListener('click',interact);
 document.getElementById('eatBtn').addEventListener('click',eat);
 document.getElementById('saveBtn').addEventListener('click',()=>{save();document.getElementById('hint').textContent='Universo guardado en este navegador.'});
 function save(){try{localStorage.setItem('mundo001_save',JSON.stringify({version:1,hunger,food,foodCollected,player:{x:player.x,z:player.z},events}));}catch{}}
@@ -135,7 +164,7 @@ function update(dt){
  const f=forward/length*player.speed*dt,s=side/length*player.speed*dt;
  player.x+=Math.sin(player.yaw)*f+Math.cos(player.yaw)*s;
  player.z+=-Math.cos(player.yaw)*f+Math.sin(player.yaw)*s;
- camera.position.set(player.x,1.7,player.z);
+ camera.position.set(player.x,1.7,player.z);\n aiGroup.rotation.y+=dt*.35;aiCore.position.y=1.15+Math.sin(now/450)*.08;
  camera.rotation.order='YXZ';camera.rotation.y=player.yaw;camera.rotation.x=player.pitch;
  // Ritmo acelerado solo para esta demostración: el hambre disminuye lentamente mientras exploras.
  hunger=Math.max(0,hunger-dt*.22);
@@ -149,7 +178,7 @@ let prev=performance.now();
 function loop(now){requestAnimationFrame(loop);const dt=Math.min((now-prev)/1000,.05);prev=now;update(dt);renderer.render(scene,camera);if(now-lastSave>5000){save();lastSave=now;}}
 requestAnimationFrame(loop);
 addEventListener('resize',()=>{camera.aspect=innerWidth/innerHeight;camera.updateProjectionMatrix();renderer.setSize(innerWidth,innerHeight)});
-log('La IA recién nacida existe sin recuerdos ni conocimientos.');
+log('La primera IA despertó con conocimientos básicos y sin recuerdos personales.');
 updateHud();
 </script>
 </body>
