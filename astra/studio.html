@@ -1,0 +1,113 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#080d19">
+<title>ASTRA STUDIO — Prototipo 3D</title>
+<style>
+:root{color-scheme:dark;--bg:#080d19;--panel:#111b2d;--line:#293a55;--text:#edf4ff;--muted:#9aabc4;--blue:#72b5ff;--cyan:#70e0dc}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--text);font:14px/1.45 system-ui,sans-serif;min-height:100dvh}
+header{height:62px;display:flex;align-items:center;gap:12px;padding:0 16px;border-bottom:1px solid var(--line);background:#0e1728}
+.logo{width:36px;height:36px;border-radius:12px;display:grid;place-items:center;background:#1d3b60;color:#bfe0ff;font-size:21px}
+.brand{flex:1}.brand b{letter-spacing:.15em}.brand small{display:block;color:var(--muted);font-size:11px}
+button,select{font:inherit;color:var(--text);background:#1a2a42;border:1px solid #38516f;border-radius:10px;padding:9px 12px}
+button:active{transform:scale(.98)}button.primary{background:linear-gradient(135deg,#6bb8ff,#3e79d0);color:#071426;border:0;font-weight:700}
+main{max-width:1200px;margin:auto;padding:14px;display:grid;grid-template-columns:minmax(0,1fr) 260px;gap:12px}
+.viewport{position:relative;min-height:430px;height:min(66vh,650px);background:radial-gradient(ellipse at 50% 42%,#1b3452,#080f1e 70%);border:1px solid var(--line);border-radius:16px;overflow:hidden}
+#stage{position:absolute;inset:0}#stage canvas{width:100%;height:100%;display:block}
+.overlay{position:absolute;z-index:2;pointer-events:none;color:#d9eaff;text-shadow:0 1px 8px #000}
+.scene-label{top:13px;left:14px;font-size:11px;letter-spacing:.12em;text-transform:uppercase}
+.hint{bottom:12px;left:14px;color:#a9bad1;font-size:11px}
+.side{display:flex;flex-direction:column;gap:10px}
+.panel{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:13px}
+.panel h2{font-size:13px;margin:0 0 10px;letter-spacing:.08em;text-transform:uppercase;color:#c9ddf6}
+.field{display:flex;flex-direction:column;gap:5px;margin:9px 0}.field label{font-size:11px;color:var(--muted)}
+input[type=text],select{width:100%;min-width:0}input[type=range]{width:100%;accent-color:#73baff}
+.actions{display:flex;gap:7px;flex-wrap:wrap}.actions button{flex:1}
+.timeline{grid-column:1/-1}.timeline-top{display:flex;align-items:center;justify-content:space-between;gap:8px;flex-wrap:wrap}.time{font-variant-numeric:tabular-nums;color:var(--cyan);font-size:12px}
+.status{color:var(--muted);font-size:11px;margin-top:8px}
+.badge{display:inline-block;border:1px solid #38516f;color:#b9d9ff;border-radius:99px;padding:3px 8px;font-size:10px}
+@media(max-width:760px){main{grid-template-columns:1fr;padding:9px}.viewport{height:52vh;min-height:330px}.side{display:grid;grid-template-columns:1fr 1fr}.side .panel:first-child{grid-column:1/-1}.timeline{grid-column:1}.actions button{padding:8px 7px;font-size:12px}}
+@media(max-width:420px){.side{grid-template-columns:1fr}.side .panel:first-child{grid-column:auto}.viewport{height:48vh}}
+</style>
+</head>
+<body>
+<header><div class="logo">✧</div><div class="brand"><b>ASTRA STUDIO</b><small>Laboratorio 3D · Prototipo 0.1</small></div><span class="badge">EXPERIMENTAL</span></header>
+<main>
+<section class="viewport">
+ <div id="stage"></div><div class="overlay scene-label">ESCENA 01 · PRUEBA DE MOVIMIENTO</div>
+ <div class="overlay hint">Arrastra para orbitar · Pellizca para zoom</div>
+</section>
+<aside class="side">
+ <section class="panel">
+  <h2>Personaje</h2>
+  <div class="field"><label for="characterName">Nombre del modelo</label><input id="characterName" type="text" value="Astra — Explorador"></div>
+  <div class="field"><label for="materialColor">Color principal</label><select id="materialColor"><option value="#b34b55">Rojo dragón</option><option value="#4c91ce">Azul</option><option value="#d1a35b">Dorado</option><option value="#8b72c9">Violeta</option></select></div>
+  <div class="actions"><button id="resetView">Cámara inicial</button><button id="export" class="primary">Exportar GLB</button></div>
+ </section>
+ <section class="panel">
+  <h2>Dirección</h2>
+  <div class="field"><label for="shot">Plano cinematográfico</label><select id="shot"><option value="wide">Plano general</option><option value="medium">Plano medio</option><option value="close">Primer plano</option><option value="low">Contrapicado</option></select></div>
+  <div class="field"><label for="light">Iluminación</label><select id="light"><option value="cinema">Cinemática</option><option value="day">Día suave</option><option value="dramatic">Dramática</option></select></div>
+  <div class="status" id="exportStatus">Modelo procedural de prueba. No es todavía un generador neuronal.</div>
+ </section>
+</aside>
+<section class="panel timeline">
+ <div class="timeline-top"><h2 style="margin:0">Línea de tiempo · Ciclo de caminar</h2><span class="time" id="clock">00:00.0 / 00:04.0</span></div>
+ <input id="scrub" type="range" min="0" max="4" step=".01" value="0" aria-label="Posición de animación">
+ <div class="actions"><button id="play" class="primary">▶ Reproducir</button><button id="pause">Ⅱ Pausar</button><button id="restart">↺ Reiniciar</button></div>
+ <div class="status">Capacidades activas: geometría procedural, vista 3D, cámara, iluminación, animación por articulaciones y exportación GLB.</div>
+</section>
+</main>
+<script type="module">
+import * as THREE from 'https://cdn.jsdelivr.net/npm/three@0.170.0/build/three.module.js';
+import {OrbitControls} from 'https://cdn.jsdelivr.net/npm/three@0.170.0/examples/jsm/controls/OrbitControls.js';
+import {GLTFExporter} from 'https://cdn.jsdelivr.net/npm/three@0.170.0/examples/jsm/exporters/GLTFExporter.js';
+
+const stage=document.querySelector('#stage');
+const scene=new THREE.Scene();scene.background=new THREE.Color('#0b1424');scene.fog=new THREE.Fog('#0b1424',9,22);
+const camera=new THREE.PerspectiveCamera(38,1,.1,100);camera.position.set(4,3.1,6);
+const renderer=new THREE.WebGLRenderer({antialias:true,alpha:false});renderer.setPixelRatio(Math.min(devicePixelRatio,2));renderer.outputColorSpace=THREE.SRGBColorSpace;renderer.shadowMap.enabled=true;renderer.shadowMap.type=THREE.PCFSoftShadowMap;stage.appendChild(renderer.domElement);
+const controls=new OrbitControls(camera,renderer.domElement);controls.enableDamping=true;controls.target.set(0,1.25,0);controls.maxPolarAngle=Math.PI*.49;
+scene.add(new THREE.HemisphereLight(0x9ecbff,0x202033,2));
+const key=new THREE.DirectionalLight(0xffe2c0,3.2);key.position.set(-3,7,4);key.castShadow=true;key.shadow.mapSize.set(1024,1024);scene.add(key);
+const rim=new THREE.DirectionalLight(0x398bff,2.2);rim.position.set(4,3,-4);scene.add(rim);
+const floor=new THREE.Mesh(new THREE.PlaneGeometry(200,200),new THREE.MeshStandardMaterial({color:0x101c2d,roughness:.92}));floor.rotation.x=-Math.PI/2;floor.position.y=-.03;floor.receiveShadow=true;scene.add(floor);
+const grid=new THREE.GridHelper(20,40,0x34516e,0x1d3048);grid.position.y=-.018;scene.add(grid);
+const character=new THREE.Group();character.name='AstraCharacter';scene.add(character);
+const mat=(color,rough=.7)=>new THREE.MeshStandardMaterial({color,roughness:rough});
+let skin=mat('#b34b55'),dark=mat('#452b38'),gold=mat('#e0b36b',.4),eye=mat('#f3f6ff',.25);
+function sphere(parent,name,pos,scale,material){const m=new THREE.Mesh(new THREE.SphereGeometry(1,18,14),material);m.name=name;m.position.set(...pos);m.scale.set(...scale);m.castShadow=true;m.receiveShadow=true;parent.add(m);return m}
+function capsule(parent,name,pos,radius,length,material){const m=new THREE.Mesh(new THREE.CapsuleGeometry(radius,length,4,8),material);m.name=name;m.position.set(...pos);m.castShadow=true;m.receiveShadow=true;parent.add(m);return m}
+const torso=new THREE.Group();torso.name='Torso';torso.position.y=1.35;character.add(torso);
+sphere(torso,'Body',[0,0,0],[.48,.62,.28],skin);
+sphere(torso,'Chest',[0,.12,.235],[.3,.34,.09],gold);
+const head=new THREE.Group();head.name='Head';head.position.set(0,.78,0);torso.add(head);
+sphere(head,'HeadMesh',[0,.12,0],[.36,.39,.34],skin);
+sphere(head,'LeftEye',[-.14,.16,.29],[.055,.07,.035],eye);sphere(head,'RightEye',[.14,.16,.29],[.055,.07,.035],eye);
+sphere(head,'LeftPupil',[-.14,.16,.322],[.025,.04,.012],dark);sphere(head,'RightPupil',[.14,.16,.322],[.025,.04,.012],dark);
+const leftArm=new THREE.Group();leftArm.name='LeftArm';leftArm.position.set(-.53,.38,0);torso.add(leftArm);
+capsule(leftArm,'LeftUpperArm',[0,-.27,0],.13,.32,skin);sphere(leftArm,'LeftHand',[0,-.52,.02],[.14,.14,.14],gold);
+const rightArm=new THREE.Group();rightArm.name='RightArm';rightArm.position.set(.53,.38,0);torso.add(rightArm);
+capsule(rightArm,'RightUpperArm',[0,-.27,0],.13,.32,skin);sphere(rightArm,'RightHand',[0,-.52,.02],[.14,.14,.14],gold);
+function leg(name,x){const pivot=new THREE.Group();pivot.name=name;pivot.position.set(x,-.48,0);torso.add(pivot);capsule(pivot,name+'Segment',[0,-.34,0],.16,.48,skin);sphere(pivot,name+'Foot',[0,-.64,.12],[.19,.12,.29],dark);return pivot}
+const leftLeg=leg('LeftLeg',-.23),rightLeg=leg('RightLeg',.23);
+for(let i=0;i<3;i++){const horn=sphere(head,'Crest'+i,[(i-1)*.17,.47,-.02],[.07,.22,.08],gold);horn.rotation.z=(i-1)*-.25}
+const groundMark=new THREE.Mesh(new THREE.CircleGeometry(.75,48),new THREE.MeshBasicMaterial({color:0x315d83,transparent:true,opacity:.18}));groundMark.rotation.x=-Math.PI/2;groundMark.position.y=.002;character.add(groundMark);
+let playing=false,elapsed=0,last=performance.now(),duration=4;
+function pose(t){const phase=t/duration*Math.PI*2;const swing=Math.sin(phase);leftLeg.rotation.x=swing*.62;rightLeg.rotation.x=-swing*.62;leftArm.rotation.x=-swing*.48;rightArm.rotation.x=swing*.48;torso.position.y=1.35+Math.abs(Math.sin(phase*2))*.045;torso.rotation.z=Math.sin(phase)*.025;head.rotation.x=Math.sin(phase*2)*.025;character.position.y=Math.abs(Math.sin(phase*2))*.035}
+function resize(){const w=stage.clientWidth,h=stage.clientHeight;camera.aspect=w/h;camera.updateProjectionMatrix();renderer.setSize(w,h,false)}new ResizeObserver(resize).observe(stage);resize();
+function frame(now){requestAnimationFrame(frame);const dt=Math.min((now-last)/1000,.05);last=now;if(playing){elapsed=(elapsed+dt)%duration;document.querySelector('#scrub').value=elapsed;updateClock()}pose(elapsed);controls.update();renderer.render(scene,camera)}requestAnimationFrame(frame);
+function updateClock(){document.querySelector('#clock').textContent='00:'+String(Math.floor(elapsed)).padStart(2,'0')+'.'+Math.floor((elapsed%1)*10)+' / 00:04.0'}
+const scrub=document.querySelector('#scrub');scrub.addEventListener('input',()=>{playing=false;elapsed=Number(scrub.value);pose(elapsed);updateClock()});
+document.querySelector('#play').onclick=()=>playing=true;document.querySelector('#pause').onclick=()=>playing=false;document.querySelector('#restart').onclick=()=>{playing=false;elapsed=0;scrub.value=0;pose(0);updateClock()};
+document.querySelector('#materialColor').onchange=e=>{skin.color.set(e.target.value)};
+document.querySelector('#shot').onchange=e=>{const v=e.target.value;if(v==='wide'){camera.position.set(4,3.1,6);controls.target.set(0,1.2,0)}if(v==='medium'){camera.position.set(2.5,2.4,4.2);controls.target.set(0,1.45,0)}if(v==='close'){camera.position.set(1.25,2.35,2.6);controls.target.set(0,2.0,0)}if(v==='low'){camera.position.set(3,.9,5);controls.target.set(0,1.5,0)}controls.update()};
+document.querySelector('#light').onchange=e=>{const v=e.target.value;key.intensity=v==='dramatic'?4.2:v==='day'?2.2:3.2;rim.intensity=v==='dramatic'?3.5:v==='day'?1.1:2.2;scene.background.set(v==='day'?'#24364b':'#0b1424')};
+document.querySelector('#resetView').onclick=()=>{camera.position.set(4,3.1,6);controls.target.set(0,1.25,0);controls.update()};
+document.querySelector('#export').onclick=()=>{const status=document.querySelector('#exportStatus');status.textContent='Preparando archivo GLB…';const exporter=new GLTFExporter();exporter.parse(character,data=>{const blob=new Blob([data],{type:'model/gltf-binary'});const url=URL.createObjectURL(blob);const a=document.createElement('a');a.href=url;a.download=(document.querySelector('#characterName').value.trim().replace(/[^a-z0-9_-]+/gi,'_')||'astra-character')+'.glb';a.click();URL.revokeObjectURL(url);status.textContent='GLB exportado. Comprueba la carpeta de descargas.'},err=>{status.textContent='No se pudo exportar: '+err.message},{binary:true, onlyVisible:true})};
+pose(0);updateClock();
+</script>
+</body>
+</html>
