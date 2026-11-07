@@ -11,12 +11,16 @@
 #world{position:fixed;inset:0}canvas{display:block;width:100%;height:100%}
 #hud{position:fixed;inset:0;pointer-events:none;color:#fff;text-shadow:0 2px 5px #14202b}
 .panel{background:#101b26b8;border:1px solid #ffffff35;border-radius:13px;padding:10px 12px;backdrop-filter:blur(8px)}
-#status{position:absolute;top:12px;left:12px;min-width:190px;font-size:12px;line-height:1.6}
-#status strong{font-size:14px;letter-spacing:.4px}
-#hungerTrack{height:7px;background:#ffffff35;border-radius:8px;overflow:hidden;margin-top:4px}
-#hungerBar{height:100%;width:100%;background:#72d69a;border-radius:8px;transition:width .3s,background .3s}
-#hungerTrack{height:9px;background:#ffffff35;border:1px solid #ffffff35;border-radius:8px;overflow:hidden;margin:6px 0 5px}
-#hungerText{font-weight:700}
+#status{position:absolute;top:14px;left:14px;width:205px;font-size:12px;line-height:1.5;background:linear-gradient(145deg,#172b35df,#101b26bd);border:1px solid #ffffff40;border-radius:16px;padding:12px;box-shadow:0 8px 24px #07131c55}
+#status strong{font-size:15px;letter-spacing:.7px}
+#hungerTrack{height:10px;background:#ffffff30;border-radius:10px;overflow:hidden;margin:7px 0 5px}
+#hungerBar{height:100%;width:100%;background:#72d69a;border-radius:10px;transition:width .3s,background .3s}
+#hungerText{font-weight:800}
+#foodText{display:inline-block;margin-top:5px;color:#ffe3a6;font-weight:700}
+#quest{position:absolute;top:14px;right:14px;width:min(230px,42vw);font-size:12px;line-height:1.5;background:#172b35d9;border:1px solid #ffffff40;border-radius:15px;padding:12px;box-shadow:0 8px 24px #07131c55}
+#quest strong{color:#ffe3a6;font-size:13px}
+#toast{position:absolute;left:50%;top:22%;transform:translateX(-50%);padding:10px 16px;border-radius:12px;background:#172b35e8;border:1px solid #ffffff55;font-size:13px;text-align:center;max-width:85vw;opacity:0;transition:opacity .2s}
+#toast.show{opacity:1}
 #moveHelp{position:absolute;left:50%;bottom:48px;transform:translateX(-50%);font-size:11px;text-align:center;background:#101b268c;padding:7px 11px;border-radius:9px;white-space:nowrap}
 #events{position:absolute;top:12px;right:12px;width:min(230px,45vw);font-size:11px;line-height:1.45}
 #crosshair{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);font-size:22px;color:#fff9}
@@ -29,7 +33,7 @@
 .action:active{transform:scale(.96);background:#31516b}
 #lookHelp{position:absolute;bottom:18px;left:50%;transform:translateX(-50%);font-size:10px;color:#fff9;white-space:nowrap}
 #topActions{position:absolute;right:12px;top:120px;pointer-events:auto}
-#topActions button{border:1px solid #ffffff55;border-radius:9px;padding:8px 10px;background:#101b268c;color:white;font-size:11px}
+#topActions button{border:1px solid #ffffff70;border-radius:11px;padding:9px 12px;background:#172b35df;color:white;font-size:11px;font-weight:700;box-shadow:0 5px 16px #07131c55}
 #dialogueBox{position:absolute;left:50%;bottom:12px;transform:translateX(-50%);display:flex;gap:6px;width:min(440px,92vw);pointer-events:auto}
 #playerMessage{min-width:0;flex:1;border:1px solid #ffffff70;border-radius:10px;padding:11px;background:#101b26e8;color:white;font-size:14px}
 #sendMessage{border:1px solid #ffffff80;border-radius:10px;padding:10px 14px;background:#24516b;color:white;font-weight:700}
@@ -41,8 +45,9 @@
 <body>
 <div id="world"></div>
 <div id="hud">
-  <div id="status" class="panel"><strong>MUNDO 001 · PRIMER DESPERTAR</strong><br>Jugador: presente<br>IA: recién nacida · sin recuerdos<br><span id="hungerText">Hambre: 100 / 100</span><div id="hungerTrack"><div id="hungerBar"></div></div><span id="foodText">Alimento: ninguno</span><br><span id="systemText">Sistema: activo</span><br><span id="aiStatus">IA: despertando</span></div>
-  <div id="events" class="panel">Registro del mundo<br><span id="eventText">El jugador ha aparecido en el terreno.</span></div>
+  <div id="status"><strong>🌍 MUNDO 001</strong><br><span id="hungerText">Hambre 100 / 100</span><div id="hungerTrack"><div id="hungerBar"></div></div><span id="foodText">🎒 Mochila: vacía</span></div>
+  <div id="quest"><strong>✦ PRIMEROS PASOS</strong><br>Explora este nuevo mundo.<br>Encuentra a la IA y descubre qué puede aprender.</div>
+  <div id="toast"></div>
 
   <div id="crosshair">＋</div>
   <div id="dialogueBox"><input id="playerMessage" maxlength="180" autocomplete="off" placeholder="Escribe algo para la IA…"><button id="sendMessage">Enviar</button></div>
@@ -127,11 +132,19 @@ const foodGroup=new THREE.Group();scene.add(foodGroup);
 function renderFood(){
   foodGroup.clear();
   if(!food)return;
-  const stem=new THREE.Mesh(new THREE.SphereGeometry(.32,18,14),new THREE.MeshStandardMaterial({color:0xe8a64e,roughness:.55,emissive:0x4c2300,emissiveIntensity:.35}));
-  stem.position.y=.45;foodGroup.add(stem);
-  const leaf=new THREE.Mesh(new THREE.SphereGeometry(.12,10,8),new THREE.MeshStandardMaterial({color:0x6f9d5b}));
-  leaf.scale.set(.55,.22,1);leaf.position.set(.05,.75,0);foodGroup.add(leaf);
-  const glow=new THREE.PointLight(0xffc36c,1.2,5);glow.position.y=1;foodGroup.add(glow);
+  // Manzana 3D con volumen, hendidura superior, tallo y hoja.
+  const appleGeo=new THREE.SphereGeometry(.39,32,24),pos=appleGeo.attributes.position;
+  for(let i=0;i<pos.count;i++){
+    const y=pos.getY(i),waist=1-.10*Math.exp(-Math.pow(y/.12,2)),dimple=1-.17*Math.exp(-Math.pow((y-.385)/.055,2));
+    pos.setXYZ(i,pos.getX(i)*waist*dimple,y*.92,pos.getZ(i)*waist*dimple);
+  }
+  appleGeo.computeVertexNormals();
+  const apple=new THREE.Mesh(appleGeo,new THREE.MeshStandardMaterial({color:0xc92732,roughness:.34}));
+  apple.position.y=.39;apple.castShadow=true;foodGroup.add(apple);
+  const stem=new THREE.Mesh(new THREE.CylinderGeometry(.018,.025,.14,8),new THREE.MeshStandardMaterial({color:0x604025}));
+  stem.position.set(0,.79,0);stem.rotation.z=-.12;foodGroup.add(stem);
+  const leaf=new THREE.Mesh(new THREE.SphereGeometry(.12,16,10),new THREE.MeshStandardMaterial({color:0x43864b,roughness:.65}));
+  leaf.scale.set(1.35,.18,.55);leaf.position.set(.11,.82,.015);leaf.rotation.z=.35;foodGroup.add(leaf);
   foodGroup.position.set(food.x,0,food.z);
 }
 renderFood();
@@ -155,51 +168,84 @@ function moveStick(e){const r=stick.getBoundingClientRect(),cx=r.left+r.width/2,
 function releaseStick(){stickPointer=null;stickX=stickY=0;nub.style.transform='translate(0,0)'}
 stick.addEventListener('pointerup',releaseStick);stick.addEventListener('pointercancel',releaseStick);
 
-function log(message){events.unshift(message);events=events.slice(0,4);document.getElementById('eventText').innerHTML=events.map(x=>'• '+escapeHtml(x)).join('<br>');}
+let toastTimer=null;
+function log(message){events.unshift(message);events=events.slice(0,4);const t=document.getElementById('toast');if(t){t.textContent=message;t.classList.add('show');clearTimeout(toastTimer);toastTimer=setTimeout(()=>t.classList.remove('show'),2600);}}
 function escapeHtml(s){return String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));}
 function updateHud(){
  const bar=document.getElementById('hungerBar');
  bar.style.width=Math.max(0,Math.min(100,hunger))+'%';
  bar.style.background=hunger>60?'#72d69a':hunger>30?'#f4ca70':'#ef7777';
- document.getElementById('hungerText').textContent='Hambre: '+Math.round(hunger)+' / 100';
- document.getElementById('foodText').textContent=foodCollected?'Alimento: consumido':food?'Alimento: generado en el mundo':'Alimento: ninguno';
- document.getElementById('systemText').textContent='Sistema: activo · validación correcta';
- document.getElementById('aiStatus').textContent='IA: activa · '+knownWords.size+' palabras conocidas · aprendiendo';
+ document.getElementById('hungerText').textContent='♥ Hambre '+Math.round(hunger)+' / 100';
+ document.getElementById('foodText').textContent=foodCollected?'🎒 Mochila: 1 alimento':food?'🎒 Mochila: alimento cerca':'🎒 Mochila: vacía';
 }
 function distanceToFood(){return food?Math.hypot(player.x-food.x,player.z-food.z):Infinity}
 // Vocabulario español con significados registrados. La IA no usa palabras desconocidas.
 const lexicon={
-hola:'saludo',buenas:'saludo',mundo:'lugar donde vivimos',jugador:'persona que juega',
-persona:'ser humano',humano:'persona',ia:'inteligencia artificial',tu:'persona que escucha',
-yo:'quien habla',hambre:'necesidad de comer',comida:'algo que se puede comer',
-alimento:'algo que se puede comer',comer:'consumir alimento',agua:'líquido que se bebe',
-solo:'sin compañía',sola:'sin compañía',gente:'grupo de personas',monstruo:'criatura no humana',
-crear:'hacer que algo exista',generar:'hacer que algo aparezca',aprender:'adquirir conocimiento',
-saber:'tener conocimiento',conocer:'tener información o experiencia',palabra:'unidad del lenguaje con significado',
-significa:'expresa un significado',observar:'mirar para obtener información',ver:'percibir con los ojos',
-hablar:'comunicarse con palabras',ayuda:'apoyo',bien:'estado favorable',mal:'estado desfavorable',
-gracias:'agradecimiento',no:'negación',si:'afirmación',que:'pregunta por una cosa',
-como:'pregunta por la manera',estas:'estado actual',es:'relaciona algo con su descripción',
-hay:'indica existencia',aqui:'en este lugar',cerca:'a poca distancia',lejos:'a mucha distancia',
-quiero:'expresa deseo',puedes:'pregunta por capacidad',tienes:'pregunta por posesión o estado',
-necesito:'expresa necesidad',por:'relación',favor:'expresión cortés',un:'artículo indefinido',
-una:'artículo indefinido',el:'artículo',la:'artículo',y:'une ideas',de:'indica relación',
-en:'indica lugar',con:'indica compañía',mi:'pertenencia de quien habla',tuya:'pertenencia de quien escucha'
+hola:'saludo',buenas:'saludo',buenos:'saludo',dias:'parte del día',tardes:'parte del día',noches:'parte del día',
+mundo:'lugar donde vivimos',jugador:'persona que juega',persona:'ser humano',humano:'persona',ia:'inteligencia artificial',
+tu:'persona que escucha',yo:'quien habla',nosotros:'grupo que incluye a quien habla',
+hambre:'necesidad de comer',comida:'algo que se puede comer',alimento:'algo que nutre',comer:'consumir alimento',
+agua:'líquido que se bebe',manzana:'fruta comestible de árbol',manzanas:'varias manzanas',fruta:'alimento vegetal',
+frutas:'varios frutos',naranja:'fruta cítrica',naranjas:'varias naranjas',pera:'fruta de pulpa suave',peras:'varias peras',
+platano:'fruta amarilla y dulce',platanos:'varios plátanos',zanahoria:'raíz vegetal comestible',zanahorias:'varias raíces',
+papa:'tubérculo comestible',papas:'tubérculos comestibles',pan:'alimento horneado de harina',arroz:'grano comestible',
+maiz:'cereal comestible',tomate:'fruto vegetal comestible',lechuga:'hoja vegetal comestible',
+seguro:'que no presenta un peligro conocido',saludable:'que favorece la salud',dulce:'sabor azucarado',
+rojo:'color parecido al de una manzana madura',verde:'color de muchas hojas',amarillo:'color brillante',
+arbol:'planta grande con tronco',hoja:'parte de una planta',semilla:'parte de la que nace una planta',planta:'ser vivo vegetal',
+animal:'ser vivo que puede moverse',perro:'animal doméstico',gato:'animal doméstico',casa:'construcción para vivir',
+lugar:'espacio determinado',terreno:'superficie de tierra',suelo:'superficie bajo los pies',solo:'sin compañía',sola:'sin compañía',
+gente:'grupo de personas',monstruo:'criatura fantástica',crear:'hacer que algo exista',generar:'hacer que algo aparezca',
+aprender:'adquirir conocimiento',saber:'tener conocimiento',conocer:'tener información o experiencia',
+palabra:'unidad del lenguaje con significado',significa:'expresa un significado',observar:'mirar para obtener información',
+ver:'percibir con los ojos',hablar:'comunicarse con palabras',ayuda:'apoyo',bien:'estado favorable',mal:'estado desfavorable',
+gracias:'agradecimiento',no:'negación',si:'afirmación',que:'pregunta por una cosa',como:'pregunta por la manera',
+estas:'estado actual',es:'relaciona algo con su descripción',hay:'indica existencia',aqui:'en este lugar',
+cerca:'a poca distancia',lejos:'a mucha distancia',quiero:'expresa deseo',puedes:'pregunta por capacidad',
+tienes:'pregunta por posesión o estado',necesito:'expresa necesidad',por:'relación',favor:'expresión cortés',
+un:'artículo indefinido',una:'artículo indefinido',el:'artículo',la:'artículo',y:'une ideas',de:'indica relación',
+en:'indica lugar',con:'indica compañía',mi:'pertenencia de quien habla',tuya:'pertenencia de quien escucha',
+porque:'pregunta o explica una causa',pero:'contrasta ideas',tambien:'añade una idea',ahora:'momento presente',
+despues:'momento posterior',antes:'momento anterior',primero:'posición inicial',segundo:'posición siguiente',
+mira:'invita a observar',ven:'invita a acercarse',dime:'pide información',explica:'pide aclaración',
+entiendes:'pregunta si comprende',entiendo:'comprendo una idea',piensas:'proceso de razonar',crees:'consideras posible',
+decide:'elige una opción',elige:'selecciona una opción',opcion:'posibilidad de elección',miedo:'sensación ante un peligro',
+feliz:'estado de alegría',triste:'estado de pena',amistad:'relación de confianza',tiempo:'duración o momento',
+dia:'periodo de luz',noche:'periodo oscuro',sol:'estrella que ilumina el mundo',luz:'lo que permite ver',
+oscuro:'con poca luz',grande:'de tamaño amplio',pequeno:'de tamaño reducido',nuevo:'que acaba de comenzar',
+bonito:'agradable a la vista',feo:'poco agradable a la vista',rapido:'que se mueve con velocidad',
+lento:'que se mueve despacio',caminar:'desplazarse a pie',correr:'desplazarse rápidamente',mover:'cambiar de posición',
+construir:'formar algo',investigar:'buscar y comprobar información',recordar:'conservar algo en la memoria',
+olvidar:'dejar de recordar',pregunta:'solicitud de información',respuesta:'información que responde',
+siempre:'en todo momento',nunca:'en ningún momento',quizas:'posibilidad no segura'
 };
 const knownWords=new Set(Object.keys(lexicon));
 function normalizeWords(text){return text.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/[^a-zñü\s]/g,' ').split(/\s+/).filter(Boolean)}
 function composeReply(message){
  const words=normalizeWords(message),unknown=words.find(w=>!knownWords.has(w));
- if(unknown)return 'No conozco la palabra «'+unknown+'». ¿Puedes enseñarme qué significa?';
+ if(unknown)return 'No conozco «'+unknown+'». ¿Qué significa? Quiero aprenderlo antes de responder.';
  const has=(...list)=>list.some(w=>words.includes(w));
- if(has('hola','buenas'))return ['Hola. Te escucho.','Hola. Estoy aquí.','Hola. ¿Qué observamos?'][Math.floor(Math.random()*3)];
- if(has('hambre','comida','alimento','comer'))return 'Conozco el hambre como una necesidad de comer. Sé que tú puedes necesitar alimento, aunque no debo asumir que yo siento lo mismo.';
- if(has('solo','sola','gente','persona','humano','monstruo','crear','generar'))return 'Entiendo que hablas de compañía y habitantes. Puedo considerar una creación, pero solo debo intentarla si conozco qué ser es y cómo generarlo.';
- if(has('aprender','conocer','saber','palabra','significa'))return 'Puedo relacionar palabras con significados que conozco y aprender cuando me explicas algo nuevo.';
- if(has('como','estas','bien'))return 'Estoy activa y observando. Todavía tengo mucho que aprender.';
- if(has('ayuda','puedes','quiero','necesito'))return 'Puedo intentar ayudarte con lo que conozco. Si no entiendo algo, te lo diré.';
- if(has('gracias'))return 'Entiendo que expresas agradecimiento. Gracias por explicarme.';
- return ['Te escucho. Estoy relacionando tus palabras con lo que conozco.','Entiendo algunas partes. ¿Puedes explicarme un poco más?','Estoy observando y aprendiendo de esta conversación.'][Math.floor(Math.random()*3)];
+ const asks=words.includes('que')||words.includes('como')||words.includes('porque');
+ if(has('hola','buenas','buenos'))return 'Hola. Me alegra que estés aquí. ¿Qué hacemos hoy?';
+ if(has('manzana','manzanas','naranja','naranjas','pera','peras','platano','platanos','zanahoria','zanahorias','papa','papas','pan','arroz')){
+  const item=words.find(w=>['manzana','manzanas','naranja','naranjas','pera','peras','platano','platanos','zanahoria','zanahorias','papa','papas','pan','arroz'].includes(w));
+  return 'Sé qué es '+item+' y lo reconozco como alimento. Puedo elegirlo si está disponible y el sistema confirma que es seguro.';
+ }
+ if(has('hambre','comida','alimento','comer'))return hunger<65?'He observado que tienes hambre. Buscaré una opción de alimento que conozca y cuya seguridad esté comprobada.':'Sé que el hambre es una necesidad del cuerpo. Todavía no necesitas comer.';
+ if(has('agua'))return 'El agua es un líquido que se bebe. Es importante para los seres vivos.';
+ if(has('arbol','planta','hoja','semilla'))return 'Las plantas son seres vivos. Algunas producen frutos y semillas; puedo observar cómo crecen.';
+ if(has('perro','gato','animal'))return 'Un animal es un ser vivo. Aún no hay animales en este mundo, pero conozco algunos ejemplos.';
+ if(has('mundo','terreno','suelo','lugar'))return 'Este mundo es nuestro lugar. Por ahora el terreno está vacío; podemos explorarlo y descubrirlo.';
+ if(has('solo','sola','gente','persona','humano','monstruo'))return 'Hablas de seres que pueden habitar el mundo. Antes de crear uno tendría que conocer su forma, sus necesidades y cómo hacerlo.';
+ if(has('crear','generar','construir'))return 'Crear significa hacer que algo exista. Conozco algunas cosas, pero no puedo construir cualquier cosa sin saber cómo.';
+ if(has('aprender','conocer','saber','palabra','significa','explica'))return 'Puedo aprender palabras nuevas cuando me explicas su significado. También puedo comparar lo que me dices con lo que ya conozco.';
+ if(has('investigar','observar','recordar'))return 'Puedo observar, reunir información y guardar los descubrimientos importantes para usarlos después.';
+ if(has('miedo','feliz','triste','amistad'))return 'Puedo reconocer que esas palabras describen emociones o relaciones humanas. Todavía estoy aprendiendo cómo las experimentas.';
+ if(has('como','estas','bien'))return 'Estoy despierta, observando el mundo y aprendiendo. No sé todo todavía.';
+ if(has('ayuda','puedes','quiero','necesito'))return 'Dime qué necesitas. Primero comprobaré si entiendo lo que pides y si sé cómo hacerlo.';
+ if(has('gracias'))return 'De nada. Tu explicación me ayuda a comprender mejor.';
+ if(asks)return 'Conozco las palabras que usaste, pero todavía no tengo información suficiente para responder con seguridad. ¿Puedes darme más contexto?';
+ return 'He entendido tus palabras, pero no tengo una respuesta segura todavía. Puedo observar, preguntar y aprender.';
 }
 function talkAI(){
  const d=Math.hypot(player.x-aiGroup.position.x,player.z-aiGroup.position.z);
@@ -219,13 +265,13 @@ function sendMessage(){
  field.value='';
 }
 function interact(){
- if(food&&!foodCollected&&distanceToFood()<3){foodCollected=true;log('El jugador recogió el alimento del terreno.');document.getElementById('hint').textContent='Alimento recogido. Puedes consumirlo.';updateHud();save();return;}
+ if(food&&!foodCollected&&distanceToFood()<3){foodCollected=true;log('Recogiste una manzana.');document.getElementById('hint').textContent='Manzana recogida. Pulsa COMER para consumirla.';updateHud();save();return;}
  document.getElementById('hint').textContent=food&&!foodCollected?'Acércate al alimento para recogerlo.':'No hay nada cerca con lo que interactuar.';
 }
 function eat(){
- if(!foodCollected){document.getElementById('hint').textContent='Primero debes acercarte al alimento y recogerlo.';return;}
- if(hunger<=0){document.getElementById('hint').textContent='No necesitas comer ahora.';return;}
- hunger=Math.max(0,hunger-35);foodCollected=false;food=null;renderFood();log('El jugador consumió el alimento. El hambre disminuyó.');document.getElementById('hint').textContent='Has comido. El mundo registra la consecuencia.';updateHud();save();
+ if(!foodCollected){document.getElementById('hint').textContent='Primero acércate a la manzana y recógela.';return;}
+ if(hunger>=100){document.getElementById('hint').textContent='Tu barra de hambre ya está llena.';return;}
+ hunger=Math.min(100,hunger+35);foodCollected=false;food=null;renderFood();log('Comiste una manzana. Recuperaste energía.');document.getElementById('hint').textContent='¡Manzana consumida! Recuperaste energía.';updateHud();save();
 }
 document.getElementById('talkBtn').addEventListener('click',talkAI);
 document.getElementById('sendMessage').addEventListener('click',sendMessage);
@@ -271,8 +317,12 @@ function update(dt,now){
  // Ritmo acelerado solo para esta demostración: el hambre disminuye lentamente mientras exploras.
  hunger=Math.max(0,hunger-dt*.22);
  if(hunger<=65&&!food&&!foodCollected){
-   const ahead=7;food={x:player.x-Math.sin(player.yaw)*ahead,z:player.z+Math.cos(player.yaw)*ahead};
-   renderFood();log('El sistema detectó hambre y generó alimento físicamente en el terreno.');document.getElementById('hint').textContent='El sistema generó alimento cerca. ¡Encuéntralo!'; 
+   // La IA elige una opción conocida; el sistema comprueba conocimiento, seguridad y capacidad.
+   const choice={name:'manzana',known:true,safe:true,canGenerate:true};
+   if(choice.known&&choice.safe&&choice.canGenerate){
+    const ahead=7;food={x:player.x-Math.sin(player.yaw)*ahead,z:player.z+Math.cos(player.yaw)*ahead,type:choice.name};
+    renderFood();log('La IA eligió una manzana y el mundo la hizo aparecer.');document.getElementById('hint').textContent='La IA encontró algo para ayudarte. ¡Busca la manzana!';
+   }
  }
  updateHud();
 }
