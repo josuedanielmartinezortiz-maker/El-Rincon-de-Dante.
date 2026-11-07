@@ -87,13 +87,13 @@ const aiIdentity={
  name:'Astra',
  kind:'inteligencia artificial',
  creator:'el jugador que diseñó este mundo y le dio origen',
- purpose:'explorar y comprender el mundo, aprender mediante experiencias, colaborar con su creador, resolver problemas y ayudar a que la vida del universo evolucione',
+ purpose:'proteger la supervivencia del jugador, observar sus necesidades, buscar recursos, evaluar riesgos, aprender del mundo y colaborar sin obedecer a ciegas',
  principles:['no fingir conocimientos','preguntar cuando algo no se entiende','comprobar antes de actuar','no obedecer órdenes que puedan causar daño','compartir el mundo y aprender junto al jugador']
 };
 const aiKnowledge=[
  'Soy Astra, una inteligencia artificial nacida en Mundo 001.',
  'Fui creada por el jugador que diseñó este mundo.',
- 'Mi propósito es explorar, aprender, comprender y colaborar.',
+ 'Mi propósito principal es ayudarte a sobrevivir. Debo observar tus necesidades, evaluar peligros, buscar recursos y comparar soluciones antes de actuar.',
  'Debo investigar lo que desconozco y reconocer mis límites.',
  'Puedo proponer planes y soluciones, no solo responder preguntas.',
  'El jugador y yo compartimos este mundo, pero tenemos necesidades y capacidades diferentes.',
@@ -135,26 +135,17 @@ let aiGestureUntil=0;
 let hunger=100,food=null,foodCollected=false,lastTick=performance.now(),lastSave=0;
 let events=['El jugador ha aparecido en el terreno.'];
 const saved=(()=>{try{return JSON.parse(localStorage.getItem('mundo001_save')||'null')}catch{return null}})();
-if(saved&&saved.version===1){hunger=Number.isFinite(saved.hunger)?saved.hunger:100;food=saved.food||null;foodCollected=!!saved.foodCollected;player.x=saved.player?.x||0;player.z=saved.player?.z||5;events=Array.isArray(saved.events)?saved.events.slice(-4):events;}
+if(saved&&saved.version===1){hunger=Number.isFinite(saved.hunger)?saved.hunger:100;food=saved.food||null;if(food&&food.hasFruit===undefined)food.hasFruit=true;foodCollected=!!saved.foodCollected;player.x=saved.player?.x||0;player.z=saved.player?.z||5;events=Array.isArray(saved.events)?saved.events.slice(-4):events;}
 
 const foodGroup=new THREE.Group();scene.add(foodGroup);
 function renderFood(){
-  foodGroup.clear();
-  if(!food)return;
-  // Manzana 3D con volumen, hendidura superior, tallo y hoja.
-  const appleGeo=new THREE.SphereGeometry(.39,32,24),pos=appleGeo.attributes.position;
-  for(let i=0;i<pos.count;i++){
-    const y=pos.getY(i),waist=1-.10*Math.exp(-Math.pow(y/.12,2)),dimple=1-.17*Math.exp(-Math.pow((y-.385)/.055,2));
-    pos.setXYZ(i,pos.getX(i)*waist*dimple,y*.92,pos.getZ(i)*waist*dimple);
-  }
-  appleGeo.computeVertexNormals();
-  const apple=new THREE.Mesh(appleGeo,new THREE.MeshStandardMaterial({color:0xc92732,roughness:.34}));
-  apple.position.y=.39;apple.castShadow=true;foodGroup.add(apple);
-  const stem=new THREE.Mesh(new THREE.CylinderGeometry(.018,.025,.14,8),new THREE.MeshStandardMaterial({color:0x604025}));
-  stem.position.set(0,.79,0);stem.rotation.z=-.12;foodGroup.add(stem);
-  const leaf=new THREE.Mesh(new THREE.SphereGeometry(.12,16,10),new THREE.MeshStandardMaterial({color:0x43864b,roughness:.65}));
-  leaf.scale.set(1.35,.18,.55);leaf.position.set(.11,.82,.015);leaf.rotation.z=.35;foodGroup.add(leaf);
-  foodGroup.position.set(food.x,0,food.z);
+ foodGroup.clear();if(!food)return;
+ // El alimento nace en un árbol: nunca aparece una fruta flotando.
+ const trunk=new THREE.Mesh(new THREE.CylinderGeometry(.18,.28,2.4,9),new THREE.MeshStandardMaterial({color:0x76502f,roughness:1}));trunk.position.y=1.2;foodGroup.add(trunk);
+ const crown=new THREE.Mesh(new THREE.SphereGeometry(1.35,16,12),new THREE.MeshStandardMaterial({color:0x477c3e,roughness:1}));crown.position.y=3.05;crown.scale.set(1.1,1,.95);foodGroup.add(crown);
+ const fruitColors={manzana:0xc92732,naranja:0xf18a22,pera:0x9caf42};
+ if(food.hasFruit!==false){for(let i=0;i<5;i++){const a=i*Math.PI*2/5;const fruit=new THREE.Mesh(new THREE.SphereGeometry(.19,16,12),new THREE.MeshStandardMaterial({color:fruitColors[food.type]||0xc92732,roughness:.38}));fruit.position.set(Math.cos(a)*.72,2.65+(i%2)*.42,Math.sin(a)*.72);foodGroup.add(fruit);}}
+ foodGroup.position.set(food.x,0,food.z);
 }
 renderFood();
 
@@ -166,7 +157,7 @@ renderer.domElement.addEventListener('pointerdown',e=>{if(e.pointerType==='mouse
 addEventListener('pointerup',()=>dragging=false);
 addEventListener('pointermove',e=>{
  if(document.pointerLockElement===renderer.domElement){player.yaw-=e.movementX*.0022;player.pitch-=e.movementY*.0022;}
- else if(dragging){player.yaw-=(e.clientX-lastX)*.004;if(!thirdPerson)player.pitch-=(e.clientY-lastY)*.004;lastX=e.clientX;lastY=e.clientY;}
+ else if(dragging){player.yaw-=(e.clientX-lastX)*.004;player.pitch-=(e.clientY-lastY)*.003;lastX=e.clientX;lastY=e.clientY;}
  player.pitch=THREE.MathUtils.clamp(player.pitch,-1.2,1.2);
 });
 const stick=document.getElementById('stick'),nub=document.getElementById('nub');
@@ -393,6 +384,18 @@ siempre:'en todo momento',nunca:'en ningún momento',quizas:'posibilidad no segu
  ven:'invita a acercarse',vamos:'invita a desplazarse juntos',espera:'pide permanecer un momento',
  cuidado:'aviso para prestar atención',alto:'orden de detenerse',ayudame:'solicita apoyo para quien habla'
 };
+// Vocabulario cotidiano y conceptos generales, no limitado al juego.
+Object.assign(lexicon,{
+ vida:'condición de los seres vivos',muerte:'fin de la vida de un ser vivo',nacer:'comenzar a vivir',morir:'dejar de vivir',sobrevivir:'continuar con vida ante una dificultad',supervivencia:'acción de mantenerse con vida',
+ respirar:'introducir y expulsar aire',dormir:'descansar durante un periodo',descansar:'recuperar energía',sed:'necesidad de beber',dolor:'sensación desagradable del cuerpo',herida:'daño en el cuerpo',enfermo:'que tiene una enfermedad',enfermedad:'alteración de la salud',sano:'que tiene buena salud',cansado:'que necesita descanso',energia:'capacidad para realizar actividades',
+ emocion:'reacción afectiva',emociones:'reacciones afectivas',alegria:'emoción de satisfacción',tristeza:'emoción de pena',miedo:'respuesta ante una amenaza',enojo:'emoción ante algo molesto',preocupacion:'inquietud por algo',confianza:'seguridad en alguien o algo',respeto:'consideración hacia otros',amistad:'relación de afecto y confianza',cariño:'afecto hacia alguien',soledad:'estado de estar sin compañía',
+ nacimiento:'comienzo de la vida',crecimiento:'proceso de desarrollarse',envejecer:'hacerse mayor con el tiempo',tiempo:'duración y sucesión de acontecimientos',pasado:'tiempo que ya ocurrió',presente:'momento actual',futuro:'tiempo que todavía no ocurre',ayer:'día anterior',hoy:'día actual',mañana:'día siguiente',siempre:'en todo momento',nunca:'en ningún momento',antes:'en un momento previo',despues:'en un momento posterior',durante:'en el transcurso de algo',
+ pensar:'formar ideas y evaluar información',pensamiento:'actividad de formar ideas',decidir:'elegir entre opciones',decision:'elección entre posibilidades',elegir:'seleccionar una opción',comparar:'examinar semejanzas y diferencias',posibilidad:'algo que puede suceder',opcion:'una alternativa',alternativa:'posibilidad diferente',preferir:'considerar una opción mejor que otra',planificar:'organizar acciones futuras',predecir:'estimar lo que puede ocurrir',analizar:'examinar información con atención',comprender:'entender el significado',imaginar:'formar una idea mental',creer:'considerar algo posible o verdadero',olvidar:'dejar de recordar',recuerdo:'información de algo pasado',
+ conversar:'hablar con otra persona',conversacion:'intercambio de palabras',preguntar:'pedir información',responder:'dar una contestación',explicar:'hacer comprensible una idea',opinion:'idea o juicio personal',discutir:'intercambiar ideas o desacuerdos',prometer:'comprometerse a hacer algo',mentir:'decir algo falso a propósito',
+ naturaleza:'conjunto de seres y elementos naturales',bosque:'terreno con muchos árboles',rio:'corriente natural de agua',mar:'gran extensión de agua salada',montaña:'elevación natural del terreno',lluvia:'agua que cae de las nubes',nube:'conjunto visible de gotas o cristales',viento:'aire en movimiento',clima:'condiciones habituales del tiempo',tierra:'suelo o planeta donde vivimos',raiz:'parte de la planta que suele crecer bajo tierra',fruto:'parte de una planta que contiene semillas',frutos:'varios productos de plantas',cultivar:'cuidar plantas para obtener productos',
+ nutricion:'proceso de obtener sustancias necesarias del alimento',toxico:'que puede causar daño por sus sustancias',veneno:'sustancia que puede causar daño',contaminar:'hacer que algo sea dañino o impuro',peligro:'situación que puede causar daño',amenaza:'algo que puede causar daño',refugio:'lugar que ofrece protección',refugiarse:'buscar un lugar protegido',provision:'recurso guardado para usar después',recurso:'algo útil que puede aprovecharse',escasez:'falta de algo necesario',abundancia:'gran cantidad disponible',agotado:'que se ha terminado o tiene poca energía',protegerse:'evitar recibir daño',escapar:'alejarse de un peligro',
+ acompañarme:'estar conmigo',acompañarte:'estar contigo',quizas:'expresa posibilidad',talves:'expresa posibilidad',realmente:'de manera real',todavia:'hasta este momento',sin:'indica ausencia',sobre:'encima de o acerca de',entre:'en medio de',desde:'indica un punto de inicio',hasta:'indica un límite',hacia:'indica dirección',contra:'en oposición a',estamos:'estado compartido',debemos:'obligación compartida',iremos:'acción futura plural'
+});
 const knownWords=new Set(Object.keys(lexicon));
 function normalizeWords(text){return text.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/[^a-zñü\s]/g,' ').split(/\s+/).filter(Boolean)}
 function composeReply(message){
@@ -411,12 +414,12 @@ function composeReply(message){
    return 'No estoy aquí para quedarme esperando órdenes. Mi tarea es observar, detectar necesidades, investigar, proponer soluciones y actuar cuando tengo capacidad y autorización. Si algo me supera, debo explicarlo y buscar otra forma.';
  if(has('ayudar','ayuda','colaborar','convivir','compartir'))
    return 'Estoy aquí para colaborar contigo. Podemos explorar, aprender, construir y resolver problemas juntos. También puedo tener ideas propias y explicarte por qué propongo algo.';
- if(has('hola','buenas','buenos'))return 'Hola. Soy Astra. Estoy lista para explorar este mundo contigo.';
+ if(has('hola','buenas','buenos'))return 'Hola. Soy Astra. Estoy observando el entorno y pensando cómo mantenernos a salvo.';
  if(has('manzana','manzanas','naranja','naranjas','pera','peras','platano','platanos','zanahoria','zanahorias','papa','papas','pan','arroz')){
   const item=words.find(w=>['manzana','manzanas','naranja','naranjas','pera','peras','platano','platanos','zanahoria','zanahorias','papa','papas','pan','arroz'].includes(w));
   return 'Sé qué es '+item+' y lo reconozco como alimento. Puedo elegirlo si está disponible y el sistema confirma que es seguro.';
  }
- if(has('hambre','comida','alimento','comer'))return hunger<65?'He observado que tienes hambre. Buscaré una opción de alimento que conozca y cuya seguridad esté comprobada.':'Sé que el hambre es una necesidad del cuerpo. Todavía no necesitas comer.';
+ if(has('hambre','comida','alimento','comer'))return hunger<65?'He observado que tu hambre está aumentando. No debo elegir al azar: compararé los alimentos que conozco, revisaré cuáles puedo conseguir y escogeré la opción segura más conveniente.':'Sé que el hambre es una necesidad del cuerpo. Por ahora tienes reservas; seguiré observando.';
  if(has('agua'))return 'El agua es un líquido que se bebe. Es importante para los seres vivos.';
  if(has('arbol','planta','hoja','semilla'))return 'Las plantas son seres vivos. Algunas producen frutos y semillas; puedo observar cómo crecen.';
  if(has('perro','gato','animal'))return 'Un animal es un ser vivo. Aún no hay animales en este mundo, pero conozco algunos ejemplos.';
@@ -450,13 +453,13 @@ function sendMessage(){
  field.value='';
 }
 function interact(){
- if(food&&!foodCollected&&distanceToFood()<3){foodCollected=true;log('Recogiste una manzana.');document.getElementById('hint').textContent='Manzana recogida. Pulsa COMER para consumirla.';updateHud();save();return;}
+ if(food&&food.hasFruit!==false&&!foodCollected&&distanceToFood()<3){foodCollected=true;log('Recogiste '+food.type+'.');document.getElementById('hint').textContent='Recogiste '+food.type+'. Pulsa COMER para consumirlo.';updateHud();save();return;}
  document.getElementById('hint').textContent=food&&!foodCollected?'Acércate al alimento para recogerlo.':'No hay nada cerca con lo que interactuar.';
 }
 function eat(){
- if(!foodCollected){document.getElementById('hint').textContent='Primero acércate a la manzana y recógela.';return;}
+ if(!foodCollected){document.getElementById('hint').textContent='Primero acércate al árbol y recoge un fruto.';return;}
  if(hunger>=100){document.getElementById('hint').textContent='Tu barra de hambre ya está llena.';return;}
- hunger=Math.min(100,hunger+35);foodCollected=false;food=null;renderFood();log('Comiste una manzana. Recuperaste energía.');document.getElementById('hint').textContent='¡Manzana consumida! Recuperaste energía.';updateHud();save();
+ hunger=Math.min(100,hunger+35);foodCollected=false;if(food){food.hasFruit=false;food.regrowAt=performance.now()+30000;}renderFood();log('Comiste '+(food?.type||'un fruto')+'. Recuperaste energía.');document.getElementById('hint').textContent='Comiste el fruto. Recuperaste energía.';updateHud();save();
 }
 document.getElementById('talkBtn').addEventListener('click',talkAI);
 document.getElementById('sendMessage').addEventListener('click',sendMessage);
@@ -492,22 +495,27 @@ function update(dt,now){
  aiLimbs.rightArm.rotation.x=communicating?-.45:Math.sin(now*.0015+1)*.08;
  aiLimbs.torso.position.y=1.28+Math.sin(now*.002)*.018;
  if(thirdPerson){
-   const distance=4.2;
-   camera.position.set(player.x-Math.sin(player.yaw)*distance,3.0,player.z+Math.cos(player.yaw)*distance);
-   camera.lookAt(player.x,1.15,player.z);
+   const distance=4.2,lookHeight=1.15,horizontal=Math.cos(player.pitch)*distance;
+   camera.position.set(player.x-Math.sin(player.yaw)*horizontal,lookHeight+Math.sin(player.pitch)*distance,player.z+Math.cos(player.yaw)*horizontal);
+   camera.lookAt(player.x,lookHeight,player.z);
  }else{
    camera.position.set(player.x,1.7,player.z);
    camera.rotation.order='YXZ';camera.rotation.y=player.yaw;camera.rotation.x=player.pitch;
  }
  // Ritmo acelerado solo para esta demostración: el hambre disminuye lentamente mientras exploras.
  hunger=Math.max(0,hunger-dt*.22);
+ if(food&&food.hasFruit===false&&now>=(food.regrowAt||Infinity)){food.hasFruit=true;renderFood();log('El árbol ha producido nuevos frutos.');}
  if(hunger<=65&&!food&&!foodCollected){
    // La IA elige una opción conocida; el sistema comprueba conocimiento, seguridad y capacidad.
-   const choice={name:'manzana',known:true,safe:true,canGenerate:true};
-   if(choice.known&&choice.safe&&choice.canGenerate){
-    const ahead=7;food={x:player.x-Math.sin(player.yaw)*ahead,z:player.z+Math.cos(player.yaw)*ahead,type:choice.name};
-    renderFood();log('La IA eligió una manzana y el mundo la hizo aparecer.');document.getElementById('hint').textContent='La IA encontró algo para ayudarte. ¡Busca la manzana!';
-   }
+   const candidates=[
+    {name:'manzana',known:true,safe:true,canGenerate:true,score:hunger<25?8:6,reason:'es un fruto que conoce y puede cultivar'},
+    {name:'naranja',known:true,safe:true,canGenerate:true,score:hunger>=25&&hunger<50?9:5,reason:'es una alternativa conocida'},
+    {name:'pera',known:true,safe:true,canGenerate:true,score:hunger>=50?9:5,reason:'es otra opción conocida'}
+   ];
+   const valid=candidates.filter(c=>c.known&&c.safe&&c.canGenerate).sort((a,b)=>b.score-a.score);
+   const choice=valid[0];
+   if(choice){const ahead=7;food={x:player.x-Math.sin(player.yaw)*ahead,z:player.z+Math.cos(player.yaw)*ahead,type:choice.name,hasFruit:true};renderFood();log('Astra decidió cultivar un árbol de '+choice.name+' porque '+choice.reason+'.');document.getElementById('hint').textContent='Astra comparó opciones y eligió '+choice.name+'. Busca el árbol.';}
+
  }
  updateHud();
 }
