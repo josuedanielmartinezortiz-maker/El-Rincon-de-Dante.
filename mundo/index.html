@@ -38,7 +38,7 @@
   <div id="events" class="panel">Registro del mundo<br><span id="eventText">El jugador ha aparecido en el terreno.</span></div>
   <div id="aiKnowledge" class="panel"><strong>CONOCIMIENTOS INICIALES DE IA</strong><br>• Existe un mundo y un jugador.<br>• Puede observar su entorno.<br>• El jugador puede moverse e interactuar.<br>• El hambre es una necesidad del jugador.<br>• El sistema valida y genera alimento.</div>\n  <div id="crosshair">＋</div>
   <div id="hint">Explora el mundo. Todavía no hay nada construido.</div>
-  <div id="topActions"><button id="saveBtn">Guardar mundo</button></div>
+  <div id="topActions"><button id="viewBtn">Vista: 3.ª persona</button> <button id="saveBtn">Guardar mundo</button></div>
   <div id="controls">
     <div id="stick"><div id="nub"></div></div>
     <div class="actions"><button class="action" id="talkBtn">Hablar con IA</button><button class="action" id="interactBtn">Interactuar</button><button class="action" id="eatBtn">Comer</button></div>
@@ -75,14 +75,32 @@ const aiKnowledge=[
  'El sistema puede generar alimento en el terreno.',
  'Las acciones importantes deben validarse.'
 ];
-const aiGroup=new THREE.Group();scene.add(aiGroup);
-const aiCore=new THREE.Mesh(new THREE.SphereGeometry(.48,24,18),new THREE.MeshStandardMaterial({color:0x58c9e8,emissive:0x12617c,emissiveIntensity:1.1,roughness:.25,metalness:.15}));
-aiCore.position.y=1.15;aiGroup.add(aiCore);
-const aiRing=new THREE.Mesh(new THREE.TorusGeometry(.72,.035,8,48),new THREE.MeshBasicMaterial({color:0xa5efff}));
-aiRing.position.y=1.15;aiRing.rotation.x=Math.PI/2;aiGroup.add(aiRing);
-const aiLight=new THREE.PointLight(0x54dfff,2.2,12);aiLight.position.y=1.2;aiGroup.add(aiLight);
+function makeBody({skin=0xd9a77d,shirt=0x344c68,pants=0x263448,glow=null}={}){
+ const group=new THREE.Group();
+ const mat=(color,roughness=.8,metalness=0)=>new THREE.MeshStandardMaterial({color,roughness,metalness,emissive:glow||0x000000,emissiveIntensity:glow?0.35:0});
+ function part(geo,material,x,y,z){const m=new THREE.Mesh(geo,material);m.position.set(x,y,z);group.add(m);return m;}
+ const skinMat=mat(skin),shirtMat=mat(shirt,.65),pantsMat=mat(pants,.8);
+ const jointGeo=new THREE.SphereGeometry(.13,12,10);
+ part(new THREE.BoxGeometry(.66,.78,.34),shirtMat,0,1.28,0);
+ part(new THREE.SphereGeometry(.25,16,12),skinMat,0,1.91,0);
+ part(new THREE.BoxGeometry(.18,.62,.2),shirtMat,-.46,1.31,0);
+ part(new THREE.BoxGeometry(.18,.62,.2),shirtMat,.46,1.31,0);
+ part(jointGeo,skinMat,-.46,.98,0);part(jointGeo,skinMat,.46,.98,0);
+ part(new THREE.BoxGeometry(.25,.72,.27),pantsMat,-.19,.54,0);
+ part(new THREE.BoxGeometry(.25,.72,.27),pantsMat,.19,.54,0);
+ part(new THREE.BoxGeometry(.28,.14,.42),mat(0x20242a),-.19,.12,-.06);
+ part(new THREE.BoxGeometry(.28,.14,.42),mat(0x20242a),.19,.12,-.06);
+ if(glow){part(new THREE.SphereGeometry(.12,14,12),new THREE.MeshStandardMaterial({color:0x9af1ff,emissive:0x28c9f5,emissiveIntensity:2}),0,1.35,-.19);}
+ return group;
+}
+const playerBody=makeBody({skin:0xc99570,shirt:0x3e6f9e,pants:0x26364a});scene.add(playerBody);
+const aiGroup=makeBody({skin:0x9cecff,shirt:0x183c59,pants:0x152c40,glow:0x147caa});scene.add(aiGroup);
+const aiHalo=new THREE.Mesh(new THREE.TorusGeometry(.48,.025,8,40),new THREE.MeshBasicMaterial({color:0x8ceeff}));
+aiHalo.position.y=2.2;aiGroup.add(aiHalo);
+const aiLight=new THREE.PointLight(0x54dfff,1.5,9);aiLight.position.y=1.5;aiGroup.add(aiLight);
 aiGroup.position.set(3,0,1);
 const player={x:0,z:5,yaw:0,pitch:0,speed:5.2};
+let thirdPerson=true;
 let hunger=100,food=null,foodCollected=false,lastTick=performance.now(),lastSave=0;
 let events=['El jugador ha aparecido en el terreno.'];
 const saved=(()=>{try{return JSON.parse(localStorage.getItem('mundo001_save')||'null')}catch{return null}})();
@@ -105,11 +123,11 @@ const keys={};
 addEventListener('keydown',e=>{keys[e.key.toLowerCase()]=true;if(e.key.toLowerCase()==='e')interact();if(e.key===' '){e.preventDefault();}});
 addEventListener('keyup',e=>keys[e.key.toLowerCase()]=false);
 let dragging=false,lastX=0,lastY=0;
-renderer.domElement.addEventListener('pointerdown',e=>{if(e.pointerType==='mouse'&&innerWidth>800){renderer.domElement.requestPointerLock?.();}else{dragging=true;lastX=e.clientX;lastY=e.clientY;}});
+renderer.domElement.addEventListener('pointerdown',e=>{if(e.pointerType==='mouse'&&innerWidth>800&&!thirdPerson){renderer.domElement.requestPointerLock?.();}else{dragging=true;lastX=e.clientX;lastY=e.clientY;}});
 addEventListener('pointerup',()=>dragging=false);
 addEventListener('pointermove',e=>{
  if(document.pointerLockElement===renderer.domElement){player.yaw-=e.movementX*.0022;player.pitch-=e.movementY*.0022;}
- else if(dragging){player.yaw-=(e.clientX-lastX)*.004;player.pitch-=(e.clientY-lastY)*.004;lastX=e.clientX;lastY=e.clientY;}
+ else if(dragging){player.yaw-=(e.clientX-lastX)*.004;if(!thirdPerson)player.pitch-=(e.clientY-lastY)*.004;lastX=e.clientX;lastY=e.clientY;}
  player.pitch=THREE.MathUtils.clamp(player.pitch,-1.2,1.2);
 });
 const stick=document.getElementById('stick'),nub=document.getElementById('nub');
@@ -152,7 +170,7 @@ function eat(){
  if(hunger<=0){document.getElementById('hint').textContent='No necesitas comer ahora.';return;}
  hunger=Math.max(0,hunger-35);foodCollected=false;food=null;renderFood();log('El jugador consumió el alimento. El hambre disminuyó.');document.getElementById('hint').textContent='Has comido. El mundo registra la consecuencia.';updateHud();save();
 }
-document.getElementById('talkBtn').addEventListener('click',talkAI);\ndocument.getElementById('interactBtn').addEventListener('click',interact);
+document.getElementById('talkBtn').addEventListener('click',talkAI);\ndocument.getElementById('viewBtn').addEventListener('click',()=>{thirdPerson=!thirdPerson;document.getElementById('viewBtn').textContent=thirdPerson?'Vista: 3.ª persona':'Vista: 1.ª persona';playerBody.visible=thirdPerson;});\ndocument.getElementById('interactBtn').addEventListener('click',interact);
 document.getElementById('eatBtn').addEventListener('click',eat);
 document.getElementById('saveBtn').addEventListener('click',()=>{save();document.getElementById('hint').textContent='Universo guardado en este navegador.'});
 function save(){try{localStorage.setItem('mundo001_save',JSON.stringify({version:1,hunger,food,foodCollected,player:{x:player.x,z:player.z},events}));}catch{}}
@@ -164,8 +182,17 @@ function update(dt){
  const f=forward/length*player.speed*dt,s=side/length*player.speed*dt;
  player.x+=Math.sin(player.yaw)*f+Math.cos(player.yaw)*s;
  player.z+=-Math.cos(player.yaw)*f+Math.sin(player.yaw)*s;
- camera.position.set(player.x,1.7,player.z);\n aiGroup.rotation.y+=dt*.35;aiCore.position.y=1.15+Math.sin(now/450)*.08;
- camera.rotation.order='YXZ';camera.rotation.y=player.yaw;camera.rotation.x=player.pitch;
+ playerBody.visible=thirdPerson;\n playerBody.position.set(player.x,0,player.z);
+ playerBody.rotation.y=player.yaw;
+ aiGroup.rotation.y+=dt*.35;
+ if(thirdPerson){
+   const distance=4.2;
+   camera.position.set(player.x-Math.sin(player.yaw)*distance,3.0,player.z+Math.cos(player.yaw)*distance);
+   camera.lookAt(player.x,1.15,player.z);
+ }else{
+   camera.position.set(player.x,1.7,player.z);
+   camera.rotation.order='YXZ';camera.rotation.y=player.yaw;camera.rotation.x=player.pitch;
+ }
  // Ritmo acelerado solo para esta demostración: el hambre disminuye lentamente mientras exploras.
  hunger=Math.max(0,hunger-dt*.22);
  if(hunger<=65&&!food&&!foodCollected){
