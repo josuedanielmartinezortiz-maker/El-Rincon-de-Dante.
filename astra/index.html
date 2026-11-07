@@ -1,0 +1,83 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#0b1020">
+<title>ASTRA — Chat</title>
+<style>
+:root{color-scheme:dark;--bg:#080d19;--panel:#111a2b;--panel2:#172338;--line:#263650;--text:#edf3ff;--muted:#94a6c2;--blue:#6ba8ff;--cyan:#6de2e0}
+*{box-sizing:border-box}body{margin:0;background:radial-gradient(ellipse at 50% -15%,#1b3154 0%,var(--bg) 48%);color:var(--text);font:15px/1.5 system-ui,-apple-system,Segoe UI,Roboto,sans-serif;height:100dvh;display:flex;justify-content:center}
+.app{width:100%;max-width:900px;height:100dvh;display:flex;flex-direction:column;background:rgba(8,13,25,.78);border-inline:1px solid #1a2940}
+header{display:flex;align-items:center;gap:12px;padding:15px 17px;border-bottom:1px solid var(--line);background:rgba(13,21,36,.94)}
+.logo{width:42px;height:42px;border-radius:14px;display:grid;place-items:center;background:linear-gradient(145deg,#234d83,#17233e);border:1px solid #4778b7;color:#b9dcff;font-size:21px}
+.brand{flex:1}.brand strong{display:block;letter-spacing:.13em;font-size:15px}.status{color:var(--muted);font-size:12px}.dot{display:inline-block;width:7px;height:7px;border-radius:50%;background:#e5b85b;margin-right:6px}
+.iconbtn{border:1px solid var(--line);background:var(--panel);color:var(--muted);border-radius:11px;padding:9px 11px;font-size:13px}
+main{flex:1;overflow:auto;padding:22px 16px 28px;scroll-behavior:smooth}
+.welcome{max-width:570px;margin:8vh auto 28px;text-align:center}.orb{width:76px;height:76px;margin:0 auto 17px;border-radius:26px;display:grid;place-items:center;font-size:34px;background:radial-gradient(circle at 35% 25%,#3c79b8,#182b4c 70%);border:1px solid #527eae;box-shadow:0 0 55px #326db533}
+h1{font-size:28px;margin:0 0 7px;letter-spacing:.04em}.welcome p{color:var(--muted);margin:0 auto;max-width:440px}
+.note{margin:20px auto 0;padding:11px 13px;border:1px solid #4a422d;background:#201d17;color:#ddc995;border-radius:12px;font-size:12px;max-width:480px}
+.messages{max-width:720px;margin:auto;display:flex;flex-direction:column;gap:17px}.msg{display:flex;gap:10px;align-items:flex-start}.msg.user{flex-direction:row-reverse}.avatar{flex:0 0 31px;width:31px;height:31px;border-radius:11px;display:grid;place-items:center;background:#20395c;border:1px solid #365d8d;color:#c8e3ff;font-size:13px}.user .avatar{background:#293348;border-color:#45536a}.bubble{max-width:min(82%,590px);padding:11px 14px;border:1px solid var(--line);background:var(--panel);border-radius:4px 15px 15px 15px;white-space:pre-wrap;overflow-wrap:anywhere}.user .bubble{background:#1a3150;border-color:#31547d;border-radius:15px 4px 15px 15px}
+.composer-wrap{padding:12px 14px calc(12px + env(safe-area-inset-bottom));border-top:1px solid var(--line);background:rgba(13,21,36,.97)}
+.composer{max-width:760px;margin:auto;display:flex;gap:9px;align-items:flex-end;background:#121e31;border:1px solid #344b6b;border-radius:18px;padding:8px}
+textarea{flex:1;resize:none;max-height:140px;min-height:42px;border:0;outline:0;background:transparent;color:var(--text);font:inherit;padding:10px 8px}textarea::placeholder{color:#8293ad}
+.send{width:43px;height:43px;border:0;border-radius:13px;background:linear-gradient(145deg,#68b6ff,#3979d1);color:#061326;font-size:19px;font-weight:700}
+.hint{text-align:center;color:#71839e;font-size:11px;margin:8px 0 0}
+@media(min-width:700px){header{padding:17px 24px}main{padding:24px}.composer-wrap{padding-inline:24px}}
+</style>
+</head>
+<body>
+<div class="app">
+<header>
+ <div class="logo">✧</div>
+ <div class="brand"><strong>ASTRA</strong><div class="status"><span class="dot"></span>Chat de desarrollo · Núcleo pendiente</div></div>
+ <button class="iconbtn" id="clear" type="button">Nuevo chat</button>
+</header>
+<main id="main">
+ <section class="welcome" id="welcome">
+  <div class="orb">✧</div>
+  <h1>Hola, soy Astra.</h1>
+  <p>Este es el comienzo de mi espacio de conversación. Aquí construiremos mi capacidad para comprender y dialogar contigo.</p>
+  <div class="note">Modo de interfaz: el modelo de lenguaje todavía no está conectado. No voy a fingir que entiendo o razono con un cerebro que aún no hemos integrado.</div>
+ </section>
+ <section class="messages" id="messages" aria-live="polite"></section>
+</main>
+<div class="composer-wrap">
+ <form class="composer" id="form">
+  <textarea id="input" rows="1" placeholder="Escribe un mensaje a Astra..." aria-label="Mensaje"></textarea>
+  <button class="send" type="submit" aria-label="Enviar">↑</button>
+ </form>
+ <div class="hint">Enter para enviar · Shift + Enter para salto de línea</div>
+</div>
+</div>
+<script>
+const key='astra_chat_v1';
+const messagesEl=document.getElementById('messages');
+const welcome=document.getElementById('welcome');
+const main=document.getElementById('main');
+const input=document.getElementById('input');
+let history=[];
+function save(){try{localStorage.setItem(key,JSON.stringify(history))}catch(e){}}
+function add(role,text,store=true){
+ welcome.hidden=true;
+ const row=document.createElement('div');row.className='msg '+role;
+ const avatar=document.createElement('div');avatar.className='avatar';avatar.textContent=role==='user'?'T':'✧';
+ const bubble=document.createElement('div');bubble.className='bubble';bubble.textContent=text;
+ row.append(avatar,bubble);messagesEl.append(row);
+ if(store){history.push({role,text});save()}
+ main.scrollTop=main.scrollHeight;
+}
+function render(){for(const item of history)add(item.role,item.text,false);if(history.length)welcome.hidden=true}
+document.getElementById('form').addEventListener('submit',e=>{
+ e.preventDefault();const text=input.value.trim();if(!text)return;
+ add('user',text);input.value='';input.style.height='auto';
+ add('assistant','Tu mensaje llegó. El chat ya registra la conversación, pero todavía falta conectar el modelo de lenguaje para que pueda generar una respuesta real. Próximo paso: integrar el cerebro de Astra sin exponer claves privadas en esta página.');
+});
+input.addEventListener('input',()=>{input.style.height='auto';input.style.height=Math.min(input.scrollHeight,140)+'px'});
+input.addEventListener('keydown',e=>{if(e.key==='Enter'&&!e.shiftKey){e.preventDefault();document.getElementById('form').requestSubmit()}});
+document.getElementById('clear').addEventListener('click',()=>{history=[];save();messagesEl.replaceChildren();welcome.hidden=false;input.focus()});
+try{history=JSON.parse(localStorage.getItem(key)||'[]');if(!Array.isArray(history))history=[]}catch(e){history=[]}
+render();
+</script>
+</body>
+</html>
