@@ -187,7 +187,7 @@ una:'artículo indefinido',el:'artículo',la:'artículo',y:'une ideas',de:'indic
 en:'indica lugar',con:'indica compañía',mi:'pertenencia de quien habla',tuya:'pertenencia de quien escucha'
 };
 const knownWords=new Set(Object.keys(lexicon));
-function normalizeWords(text){return text.toLowerCase().normalize('NFD').replace(/[\\u0300-\\u036f]/g,'').replace(/[^a-zñü\\s]/g,' ').split(/\\s+/).filter(Boolean)}
+function normalizeWords(text){return text.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/[^a-zñü\s]/g,' ').split(/\s+/).filter(Boolean)}
 function composeReply(message){
  const words=normalizeWords(message),unknown=words.find(w=>!knownWords.has(w));
  if(unknown)return 'No conozco la palabra «'+unknown+'». ¿Puedes enseñarme qué significa?';
