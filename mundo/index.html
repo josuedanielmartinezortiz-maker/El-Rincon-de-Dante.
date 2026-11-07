@@ -195,7 +195,7 @@ document.getElementById('eatBtn').addEventListener('click',eat);
 document.getElementById('saveBtn').addEventListener('click',()=>{save();document.getElementById('hint').textContent='Universo guardado en este navegador.'});
 function save(){try{localStorage.setItem('mundo001_save',JSON.stringify({version:1,hunger,food,foodCollected,player:{x:player.x,z:player.z},events}));}catch{}}
 
-function update(dt){
+function update(dt,now){
  const forward=(keys.w||keys.arrowup?1:0)-(keys.s||keys.arrowdown?1:0)-stickY;
  const side=(keys.d||keys.arrowright?1:0)-(keys.a||keys.arrowleft?1:0)+stickX;
  const length=Math.hypot(forward,side)||1;
@@ -236,7 +236,7 @@ function update(dt){
  updateHud();
 }
 let prev=performance.now();
-function loop(now){requestAnimationFrame(loop);const dt=Math.min((now-prev)/1000,.05);prev=now;update(dt);renderer.render(scene,camera);if(now-lastSave>5000){save();lastSave=now;}}
+function loop(now){requestAnimationFrame(loop);const dt=Math.min((now-prev)/1000,.05);prev=now;update(dt,now);renderer.render(scene,camera);if(now-lastSave>5000){save();lastSave=now;}}
 requestAnimationFrame(loop);
 addEventListener('resize',()=>{camera.aspect=innerWidth/innerHeight;camera.updateProjectionMatrix();renderer.setSize(innerWidth,innerHeight)});
 log('La primera IA despertó con conocimientos básicos y sin recuerdos personales.');
