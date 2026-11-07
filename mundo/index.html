@@ -14,7 +14,10 @@
 #status{position:absolute;top:12px;left:12px;min-width:190px;font-size:12px;line-height:1.6}
 #status strong{font-size:14px;letter-spacing:.4px}
 #hungerTrack{height:7px;background:#ffffff35;border-radius:8px;overflow:hidden;margin-top:4px}
-#hungerBar{height:100%;width:100%;background:#f4ca70;transition:width .3s}
+#hungerBar{height:100%;width:100%;background:#72d69a;border-radius:8px;transition:width .3s,background .3s}
+#hungerTrack{height:9px;background:#ffffff35;border:1px solid #ffffff35;border-radius:8px;overflow:hidden;margin:6px 0 5px}
+#hungerText{font-weight:700}
+#moveHelp{position:absolute;left:50%;bottom:48px;transform:translateX(-50%);font-size:11px;text-align:center;background:#101b268c;padding:7px 11px;border-radius:9px;white-space:nowrap}
 #events{position:absolute;top:12px;right:12px;width:min(230px,45vw);font-size:11px;line-height:1.45}
 #crosshair{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);font-size:22px;color:#fff9}
 #hint{position:absolute;left:50%;bottom:112px;transform:translateX(-50%);font-size:12px;text-align:center;max-width:80vw}
@@ -26,8 +29,10 @@
 .action:active{transform:scale(.96);background:#31516b}
 #lookHelp{position:absolute;bottom:18px;left:50%;transform:translateX(-50%);font-size:10px;color:#fff9;white-space:nowrap}
 #topActions{position:absolute;right:12px;top:120px;pointer-events:auto}
-#topActions button{border:1px solid #ffffff55;border-radius:9px;padding:8px 10px;background:#101b268c;color:white;font-size:11px}\n#aiKnowledge{position:absolute;left:12px;bottom:12px;width:min(270px,58vw);font-size:11px;line-height:1.45}\n#aiKnowledge strong{color:#a9e8ff}
-@media(min-width:800px){#controls{display:none}#hint{bottom:25px}#lookHelp{display:none}}
+#topActions button{border:1px solid #ffffff55;border-radius:9px;padding:8px 10px;background:#101b268c;color:white;font-size:11px}
+#aiKnowledge{position:absolute;left:12px;bottom:12px;width:min(270px,58vw);font-size:11px;line-height:1.45}
+#aiKnowledge strong{color:#a9e8ff}
+@media(min-width:800px){#controls{display:none}#hint{bottom:25px}#lookHelp{display:none}#moveHelp{bottom:18px}}
 @media(max-width:500px){#events{top:112px;right:12px;width:155px}#status{min-width:165px}#hint{bottom:140px}}
 </style>
 </head>
@@ -36,8 +41,10 @@
 <div id="hud">
   <div id="status" class="panel"><strong>MUNDO 001 · PRIMER DESPERTAR</strong><br>Jugador: presente<br>IA: recién nacida · sin recuerdos<br><span id="hungerText">Hambre: 100 / 100</span><div id="hungerTrack"><div id="hungerBar"></div></div><span id="foodText">Alimento: ninguno</span><br><span id="systemText">Sistema: activo</span><br><span id="aiStatus">IA: despertando</span></div>
   <div id="events" class="panel">Registro del mundo<br><span id="eventText">El jugador ha aparecido en el terreno.</span></div>
-  <div id="aiKnowledge" class="panel"><strong>CONOCIMIENTOS INICIALES DE IA</strong><br>• Existe un mundo y un jugador.<br>• Puede observar su entorno.<br>• El jugador puede moverse e interactuar.<br>• El hambre es una necesidad del jugador.<br>• El sistema valida y genera alimento.</div>\n  <div id="crosshair">＋</div>
+  <div id="aiKnowledge" class="panel"><strong>CONOCIMIENTOS INICIALES DE IA</strong><br>• Existe un mundo y un jugador.<br>• Puede observar su entorno.<br>• El jugador puede moverse e interactuar.<br>• El hambre es una necesidad del jugador.<br>• El sistema valida y genera alimento.</div>
+  <div id="crosshair">＋</div>
   <div id="hint">Explora el mundo. Todavía no hay nada construido.</div>
+  <div id="moveHelp">PC: WASD / flechas · Móvil: joystick · Arrastra para mirar</div>
   <div id="topActions"><button id="viewBtn">Vista: 3.ª persona</button> <button id="saveBtn">Guardar mundo</button></div>
   <div id="controls">
     <div id="stick"><div id="nub"></div></div>
@@ -141,10 +148,13 @@ stick.addEventListener('pointerup',releaseStick);stick.addEventListener('pointer
 function log(message){events.unshift(message);events=events.slice(0,4);document.getElementById('eventText').innerHTML=events.map(x=>'• '+escapeHtml(x)).join('<br>');}
 function escapeHtml(s){return String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));}
 function updateHud(){
+ const bar=document.getElementById('hungerBar');
+ bar.style.width=Math.max(0,Math.min(100,hunger))+'%';
+ bar.style.background=hunger>60?'#72d69a':hunger>30?'#f4ca70':'#ef7777';
  document.getElementById('hungerText').textContent='Hambre: '+Math.round(hunger)+' / 100';
- document.getElementById('hungerBar').style.width=hunger+'%';
  document.getElementById('foodText').textContent=foodCollected?'Alimento: consumido':food?'Alimento: generado en el mundo':'Alimento: ninguno';
- document.getElementById('systemText').textContent='Sistema: activo · validación correcta';\n document.getElementById('aiStatus').textContent='IA: activa · '+aiKnowledge.length+' conocimientos · sin recuerdos';
+ document.getElementById('systemText').textContent='Sistema: activo · validación correcta';
+ document.getElementById('aiStatus').textContent='IA: activa · '+aiKnowledge.length+' conocimientos · sin recuerdos';
 }
 function distanceToFood(){return food?Math.hypot(player.x-food.x,player.z-food.z):Infinity}
 function talkAI(){
@@ -170,7 +180,9 @@ function eat(){
  if(hunger<=0){document.getElementById('hint').textContent='No necesitas comer ahora.';return;}
  hunger=Math.max(0,hunger-35);foodCollected=false;food=null;renderFood();log('El jugador consumió el alimento. El hambre disminuyó.');document.getElementById('hint').textContent='Has comido. El mundo registra la consecuencia.';updateHud();save();
 }
-document.getElementById('talkBtn').addEventListener('click',talkAI);\ndocument.getElementById('viewBtn').addEventListener('click',()=>{thirdPerson=!thirdPerson;document.getElementById('viewBtn').textContent=thirdPerson?'Vista: 3.ª persona':'Vista: 1.ª persona';playerBody.visible=thirdPerson;});\ndocument.getElementById('interactBtn').addEventListener('click',interact);
+document.getElementById('talkBtn').addEventListener('click',talkAI);
+document.getElementById('viewBtn').addEventListener('click',()=>{thirdPerson=!thirdPerson;document.getElementById('viewBtn').textContent=thirdPerson?'Vista: 3.ª persona':'Vista: 1.ª persona';playerBody.visible=thirdPerson;});
+document.getElementById('interactBtn').addEventListener('click',interact);
 document.getElementById('eatBtn').addEventListener('click',eat);
 document.getElementById('saveBtn').addEventListener('click',()=>{save();document.getElementById('hint').textContent='Universo guardado en este navegador.'});
 function save(){try{localStorage.setItem('mundo001_save',JSON.stringify({version:1,hunger,food,foodCollected,player:{x:player.x,z:player.z},events}));}catch{}}
@@ -182,7 +194,8 @@ function update(dt){
  const f=forward/length*player.speed*dt,s=side/length*player.speed*dt;
  player.x+=Math.sin(player.yaw)*f+Math.cos(player.yaw)*s;
  player.z+=-Math.cos(player.yaw)*f+Math.sin(player.yaw)*s;
- playerBody.visible=thirdPerson;\n playerBody.position.set(player.x,0,player.z);
+ playerBody.visible=thirdPerson;
+ playerBody.position.set(player.x,0,player.z);
  playerBody.rotation.y=player.yaw;
  aiGroup.rotation.y+=dt*.35;
  if(thirdPerson){
