@@ -30,8 +30,10 @@
 #lookHelp{position:absolute;bottom:18px;left:50%;transform:translateX(-50%);font-size:10px;color:#fff9;white-space:nowrap}
 #topActions{position:absolute;right:12px;top:120px;pointer-events:auto}
 #topActions button{border:1px solid #ffffff55;border-radius:9px;padding:8px 10px;background:#101b268c;color:white;font-size:11px}
-#aiKnowledge{position:absolute;left:12px;bottom:12px;width:min(270px,58vw);font-size:11px;line-height:1.45}
-#aiKnowledge strong{color:#a9e8ff}
+#dialogueBox{position:absolute;left:50%;bottom:12px;transform:translateX(-50%);display:flex;gap:6px;width:min(440px,92vw);pointer-events:auto}
+#playerMessage{min-width:0;flex:1;border:1px solid #ffffff70;border-radius:10px;padding:11px;background:#101b26e8;color:white;font-size:14px}
+#sendMessage{border:1px solid #ffffff80;border-radius:10px;padding:10px 14px;background:#24516b;color:white;font-weight:700}
+@media(max-width:500px){#dialogueBox{bottom:130px}}
 @media(min-width:800px){#controls{display:none}#hint{bottom:25px}#lookHelp{display:none}#moveHelp{bottom:18px}}
 @media(max-width:500px){#events{top:112px;right:12px;width:155px}#status{min-width:165px}#hint{bottom:140px}}
 </style>
@@ -41,8 +43,9 @@
 <div id="hud">
   <div id="status" class="panel"><strong>MUNDO 001 · PRIMER DESPERTAR</strong><br>Jugador: presente<br>IA: recién nacida · sin recuerdos<br><span id="hungerText">Hambre: 100 / 100</span><div id="hungerTrack"><div id="hungerBar"></div></div><span id="foodText">Alimento: ninguno</span><br><span id="systemText">Sistema: activo</span><br><span id="aiStatus">IA: despertando</span></div>
   <div id="events" class="panel">Registro del mundo<br><span id="eventText">El jugador ha aparecido en el terreno.</span></div>
-  <div id="aiKnowledge" class="panel"><strong>CONOCIMIENTOS INICIALES DE IA</strong><br>• Existe un mundo y un jugador.<br>• Puede observar su entorno.<br>• El jugador puede moverse e interactuar.<br>• El hambre es una necesidad del jugador.<br>• El sistema valida y genera alimento.</div>
+
   <div id="crosshair">＋</div>
+  <div id="dialogueBox"><input id="playerMessage" maxlength="180" autocomplete="off" placeholder="Escribe algo para la IA…"><button id="sendMessage">Enviar</button></div>
   <div id="hint">Explora el mundo. Todavía no hay nada construido.</div>
   <div id="moveHelp">PC: WASD / flechas · Móvil: joystick · Arrastra para mirar</div>
   <div id="topActions"><button id="viewBtn">Vista: 3.ª persona</button> <button id="saveBtn">Guardar mundo</button></div>
@@ -161,23 +164,59 @@ function updateHud(){
  document.getElementById('hungerText').textContent='Hambre: '+Math.round(hunger)+' / 100';
  document.getElementById('foodText').textContent=foodCollected?'Alimento: consumido':food?'Alimento: generado en el mundo':'Alimento: ninguno';
  document.getElementById('systemText').textContent='Sistema: activo · validación correcta';
- document.getElementById('aiStatus').textContent='IA: activa · '+aiKnowledge.length+' conocimientos · sin recuerdos';
+ document.getElementById('aiStatus').textContent='IA: activa · '+knownWords.size+' palabras conocidas · aprendiendo';
 }
 function distanceToFood(){return food?Math.hypot(player.x-food.x,player.z-food.z):Infinity}
+// Vocabulario español con significados registrados. La IA no usa palabras desconocidas.
+const lexicon={
+hola:'saludo',buenas:'saludo',mundo:'lugar donde vivimos',jugador:'persona que juega',
+persona:'ser humano',humano:'persona',ia:'inteligencia artificial',tu:'persona que escucha',
+yo:'quien habla',hambre:'necesidad de comer',comida:'algo que se puede comer',
+alimento:'algo que se puede comer',comer:'consumir alimento',agua:'líquido que se bebe',
+solo:'sin compañía',sola:'sin compañía',gente:'grupo de personas',monstruo:'criatura no humana',
+crear:'hacer que algo exista',generar:'hacer que algo aparezca',aprender:'adquirir conocimiento',
+saber:'tener conocimiento',conocer:'tener información o experiencia',palabra:'unidad del lenguaje con significado',
+significa:'expresa un significado',observar:'mirar para obtener información',ver:'percibir con los ojos',
+hablar:'comunicarse con palabras',ayuda:'apoyo',bien:'estado favorable',mal:'estado desfavorable',
+gracias:'agradecimiento',no:'negación',si:'afirmación',que:'pregunta por una cosa',
+como:'pregunta por la manera',estas:'estado actual',es:'relaciona algo con su descripción',
+hay:'indica existencia',aqui:'en este lugar',cerca:'a poca distancia',lejos:'a mucha distancia',
+quiero:'expresa deseo',puedes:'pregunta por capacidad',tienes:'pregunta por posesión o estado',
+necesito:'expresa necesidad',por:'relación',favor:'expresión cortés',un:'artículo indefinido',
+una:'artículo indefinido',el:'artículo',la:'artículo',y:'une ideas',de:'indica relación',
+en:'indica lugar',con:'indica compañía',mi:'pertenencia de quien habla',tuya:'pertenencia de quien escucha'
+};
+const knownWords=new Set(Object.keys(lexicon));
+function normalizeWords(text){return text.toLowerCase().normalize('NFD').replace(/[\\u0300-\\u036f]/g,'').replace(/[^a-zñü\\s]/g,' ').split(/\\s+/).filter(Boolean)}
+function composeReply(message){
+ const words=normalizeWords(message),unknown=words.find(w=>!knownWords.has(w));
+ if(unknown)return 'No conozco la palabra «'+unknown+'». ¿Puedes enseñarme qué significa?';
+ const has=(...list)=>list.some(w=>words.includes(w));
+ if(has('hola','buenas'))return ['Hola. Te escucho.','Hola. Estoy aquí.','Hola. ¿Qué observamos?'][Math.floor(Math.random()*3)];
+ if(has('hambre','comida','alimento','comer'))return 'Conozco el hambre como una necesidad de comer. Sé que tú puedes necesitar alimento, aunque no debo asumir que yo siento lo mismo.';
+ if(has('solo','sola','gente','persona','humano','monstruo','crear','generar'))return 'Entiendo que hablas de compañía y habitantes. Puedo considerar una creación, pero solo debo intentarla si conozco qué ser es y cómo generarlo.';
+ if(has('aprender','conocer','saber','palabra','significa'))return 'Puedo relacionar palabras con significados que conozco y aprender cuando me explicas algo nuevo.';
+ if(has('como','estas','bien'))return 'Estoy activa y observando. Todavía tengo mucho que aprender.';
+ if(has('ayuda','puedes','quiero','necesito'))return 'Puedo intentar ayudarte con lo que conozco. Si no entiendo algo, te lo diré.';
+ if(has('gracias'))return 'Entiendo que expresas agradecimiento. Gracias por explicarme.';
+ return ['Te escucho. Estoy relacionando tus palabras con lo que conozco.','Entiendo algunas partes. ¿Puedes explicarme un poco más?','Estoy observando y aprendiendo de esta conversación.'][Math.floor(Math.random()*3)];
+}
 function talkAI(){
  const d=Math.hypot(player.x-aiGroup.position.x,player.z-aiGroup.position.z);
- if(d>7){document.getElementById('hint').textContent='La IA está a cierta distancia. Acércate para hablar.';return;}
- const replies=[
- 'Hola. Soy la primera IA de este mundo. Acabo de despertar.',
- 'Sé que existe este mundo y que tú eres el jugador.',
- 'Todavía no tengo recuerdos de experiencias anteriores.',
- 'Puedo observar el entorno, pero aún estoy aprendiendo a interpretarlo.',
- 'El sistema supervisa las acciones y puede generar alimento si detecta hambre.'
- ];
- const index=Math.min(4,Math.floor(Math.random()*replies.length));
- document.getElementById('hint').textContent='IA: '+replies[index];
+ if(d>7){document.getElementById('hint').textContent='Acércate a la IA para conversar.';return;}
+ document.getElementById('playerMessage').focus();
+ document.getElementById('hint').textContent='Escribe lo que quieras decirle a la IA.';
+}
+function sendMessage(){
+ const field=document.getElementById('playerMessage'),message=field.value.trim();
+ if(!message)return;
+ const d=Math.hypot(player.x-aiGroup.position.x,player.z-aiGroup.position.z);
+ if(d>7){document.getElementById('hint').textContent='La IA está demasiado lejos para escucharte.';return;}
+ const reply=composeReply(message);
+ document.getElementById('hint').textContent='Tú: '+message+' · IA: '+reply;
  aiGestureUntil=performance.now()+1800;
- log('El jugador habló con la primera IA.');
+ log('El jugador conversó con la IA.');
+ field.value='';
 }
 function interact(){
  if(food&&!foodCollected&&distanceToFood()<3){foodCollected=true;log('El jugador recogió el alimento del terreno.');document.getElementById('hint').textContent='Alimento recogido. Puedes consumirlo.';updateHud();save();return;}
@@ -189,6 +228,8 @@ function eat(){
  hunger=Math.max(0,hunger-35);foodCollected=false;food=null;renderFood();log('El jugador consumió el alimento. El hambre disminuyó.');document.getElementById('hint').textContent='Has comido. El mundo registra la consecuencia.';updateHud();save();
 }
 document.getElementById('talkBtn').addEventListener('click',talkAI);
+document.getElementById('sendMessage').addEventListener('click',sendMessage);
+document.getElementById('playerMessage').addEventListener('keydown',e=>{if(e.key==='Enter')sendMessage()});
 document.getElementById('viewBtn').addEventListener('click',()=>{thirdPerson=!thirdPerson;document.getElementById('viewBtn').textContent=thirdPerson?'Vista: 3.ª persona':'Vista: 1.ª persona';playerBody.visible=thirdPerson;});
 document.getElementById('interactBtn').addEventListener('click',interact);
 document.getElementById('eatBtn').addEventListener('click',eat);
